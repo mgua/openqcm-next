@@ -237,7 +237,11 @@ class MultiscanProcess(multiprocessing.Process):
         # behind a backlog, must still carry ITS cycle's values and not whatever
         # the F/D stores hold by then (measured: with two cycles drained at once
         # the first row took the second cycle's frequencies).
-        self._parser5.add5([self._my_time, self._temperature_mean, overtone_number,
+        # Field 0 is THIS overtone's time (not _my_time, the cycle's first): it is
+        # the instant the datalog row is stamped with when this is the last
+        # overtone, and it gives the temperature plot one x per reading instead
+        # of five readings stacked on the cycle's start.
+        self._parser5.add5([self._my_time_array[overtone_number], self._temperature_mean, overtone_number,
                             overtone_number == self._overtones_in_cycle - 1,
                             list(self._freq_range_mean), list(self._diss_mean)])
         

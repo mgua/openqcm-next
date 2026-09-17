@@ -713,7 +713,11 @@ class Worker:
             elif self._source == SourceType.multiscan:
                 epoch= datetime.datetime(1970, 1, 1, 0, 0) #offset-naive datetime
                 ts_mult=1e6
-                self._timestart = (int((datetime.datetime.now() - epoch).total_seconds()*ts_mult))
+                # the PROCESS's clock, from the message itself: the same clock the
+                # rows are stamped with below (a GUI clock read here sat a few ms
+                # after the first message and could put the first row before zero)
+                self._timestart = int(data[0]) if data[0] and data[0] > 0 else \
+                    (int((datetime.datetime.now() - epoch).total_seconds()*ts_mult))
                 
                 # VER 0.1.3
                 self.time_pre =  self._timestart
@@ -889,7 +893,18 @@ class Worker:
                 # get current time 
                 epoch= datetime.datetime(1970, 1, 1, 0, 0) #offset-naive datetime
                 ts_mult=1e6
-                time_current = (int((datetime.datetime.now() - epoch).total_seconds()*ts_mult))
+                # ⚠️ The row's instant is the PROCESS's time of the cycle, carried by
+                # the clock message (field 0, the time of the overtone that closed
+                # the cycle), not the GUI's clock at drain time. Measured on
+                # 2026-09-17 (main, first bench run of the one-row-per-cycle fix):
+                # 93 consecutive steps of 7.84-8.07 s once the GUI was idle, but in
+                # the first three minutes three pairs of rows 0.00 s apart after
+                # 13-18 s gaps -- two cycle ends drained in one tick and both stamped
+                # "now". The cycles were regular; the stamps were not.
+                if self._t3_store and self._t3_store > 0:
+                    time_current = int(self._t3_store)
+                else:
+                    time_current = (int((datetime.datetime.now() - epoch).total_seconds()*ts_mult))
                 
                 # ⚠️ Not int(): the GUI formats this with "{0:.1f}", which is
                 # only meaningful for a float, and truncating a 1.8 s interval
@@ -911,7 +926,8 @@ class Worker:
                                                   int((time_current - self._timestart))/_millisec, 
                                                   self._d3_store,
                                                   self._F_store if self._cycle_F is None else self._cycle_F,
-                                                  self._D_store if self._cycle_D is None else self._cycle_D)
+                                                  self._D_store if self._cycle_D is None else self._cycle_D,
+                                                  when_s=time_current/_millisec)
                         # VER 0.1.4 store the current time for the next loop 
                         self.time_pre = time_current
                 
@@ -952,7 +968,8 @@ class Worker:
                     if self._cycle_end and ( ((time_current - self.time_pre)/_millisec) >  SAMPLING_TIME_INTERVAL ):
                         FileStorage.CSVsave_Multi(filenameCSV, Constants.csv_export_path, 
                                                   int((time_current - self._timestart)/_millisec), 
-                                                  self._d3_store, self._F_store_buffer_averaging, self._D_store_buffer_averaging)
+                                                  self._d3_store, self._F_store_buffer_averaging, self._D_store_buffer_averaging,
+                                                  when_s=time_current/_millisec)
                     
                         # VER 0.1.4 store the current time for the next loop 
                         self.time_pre = time_current

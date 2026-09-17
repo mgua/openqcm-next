@@ -64,7 +64,13 @@ class FileStorage:
     # LOG DATA FILE IN MULTISAN MODE 
     # ------------------------------------------------------------------------
     @staticmethod
-    def CSVsave_Multi(filename, path, time_relative, temperature, frequency_array, dissipation_array):
+    def CSVsave_Multi(filename, path, time_relative, temperature, frequency_array, dissipation_array,
+                      when_s=None):
+        # when_s: the instant the row describes, seconds since the epoch, for the
+        # Date/Time columns. None stamps the wall clock at the time of writing,
+        # which is what the columns held before 2026-09-17; the multiscan worker
+        # passes the acquisition process's own time of the cycle, so a row
+        # written late (a GUI stall) is still stamped when it was measured.
         
         # Creates a file full path based on parameters
         full_path = FileManager.create_full_path(filename, extension=Constants.csv_extension, path=path)
@@ -97,8 +103,9 @@ class FileStorage:
              
              fix1= "%Y-%m-%d"
              fix2= "%H:%M:%S"
-             csv_time_prefix1 = (strftime(fix1, localtime()))
-             csv_time_prefix2 = (strftime(fix2, localtime()))
+             stamp = localtime() if when_s is None else localtime(when_s)
+             csv_time_prefix1 = (strftime(fix1, stamp))
+             csv_time_prefix2 = (strftime(fix2, stamp))
              
              time_relative_data = float("{0:.3f}".format(time_relative))
              temperature_data = float("{0:.2f}".format(temperature))
