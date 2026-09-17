@@ -1394,8 +1394,9 @@ selectable).
   file at checkout and the clone looks entirely modified. **When editing with a script**, read and
   write in binary: `open(p).read()` uses universal newlines and `write()` emits `'\n'`, which
   silently converts a CRLF file whole â it happened in `8c40c58` and had to be undone in `da81e2b`,
-  where a two-line change arrived as a 1598-line diff. Normalising all five is a reasonable decision
-  to take deliberately; it has not been taken.
+  where a two-line change arrived as a 1598-line diff — and again on 2026-09-17 on `fileStorage.py`, on both
+  branches, caught by the 351-line stat before the push and rewritten. Normalising all five is a reasonable
+  decision to take deliberately; it has not been taken.
 - **The GUI *can* be exercised headless** — the old "leave it all to a human" is only half true, and
   the difference matters because logic bugs are cheap to catch this way. Static checks first
   (`python -m py_compile ...`, `python -c "from openQCM.app import OPENQCM"` from `software/`), then
