@@ -444,7 +444,8 @@ arrives on the **status** queue and was consumed **after** the temperature queue
 pending temperature message saw the same stale number, so a cycle produced 0, 1 or 5 identical rows depending
 on how the GUI timer fell against the process (96 duplicate rows in 486 on 2026-09-11, 19 s gaps). Rules now:
 
-- the temperature message of an overtone is `[time, T, overtone, is_last_of_cycle]` and is posted **after**
+- the temperature message of an overtone is `[time, T, overtone, is_last_of_cycle, F[], D[]]` (the last two
+  copies of the cycle's values, which the row is written from) and is posted **after**
   that overtone's F and D messages (`Multiscan.elaborate_multi`; `_overtones_in_cycle` is set by `run()` from
   the frequencies file);
 - the worker drains **F, D, then temperature, then status** (`consume` block): with separate multiprocessing
