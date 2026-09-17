@@ -233,8 +233,13 @@ class MultiscanProcess(multiprocessing.Process):
         # overtone number of the STATUS queue, consumed after this one: a stale
         # value, so a drain wrote 0, 1 or up to 5 identical rows per cycle
         # (96 duplicates in 486 rows on 2026-09-11, and 19 s gaps).
+        # Fields 4-5 are the cycle's own F and D (copies): a row drained late,
+        # behind a backlog, must still carry ITS cycle's values and not whatever
+        # the F/D stores hold by then (measured: with two cycles drained at once
+        # the first row took the second cycle's frequencies).
         self._parser5.add5([self._my_time, self._temperature_mean, overtone_number,
-                            overtone_number == self._overtones_in_cycle - 1])
+                            overtone_number == self._overtones_in_cycle - 1,
+                            list(self._freq_range_mean), list(self._diss_mean)])
         
         # TODO single sweeep data log 
        

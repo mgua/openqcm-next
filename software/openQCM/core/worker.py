@@ -121,6 +121,8 @@ class Worker:
         # message, never from another queue (see _queue_data5, store_data)
         self._cycle_overtone = 0
         self._cycle_end = False
+        self._cycle_F = None
+        self._cycle_D = None
         # total number of overtone 
         self._number_of_peaks = 0
         
@@ -690,6 +692,10 @@ class Worker:
         # cycle end and therefore writes no multiscan row.
         self._cycle_overtone = int(data[2]) if len(data) > 2 else self._overtone_number
         self._cycle_end = bool(data[3]) if len(data) > 3 else False
+        # fields 4-5: the cycle's own F and D, so a row drained behind a backlog
+        # carries its cycle's values; without them the stores are used
+        self._cycle_F = list(data[4]) if len(data) > 5 else None
+        self._cycle_D = list(data[5]) if len(data) > 5 else None
         
         
         
@@ -903,7 +909,9 @@ class Worker:
                     if self._cycle_end:
                         FileStorage.CSVsave_Multi(filenameCSV, Constants.csv_export_path, 
                                                   int((time_current - self._timestart))/_millisec, 
-                                                  self._d3_store, self._F_store, self._D_store)
+                                                  self._d3_store,
+                                                  self._F_store if self._cycle_F is None else self._cycle_F,
+                                                  self._D_store if self._cycle_D is None else self._cycle_D)
                         # VER 0.1.4 store the current time for the next loop 
                         self.time_pre = time_current
                 
