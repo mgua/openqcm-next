@@ -436,6 +436,26 @@ put `Jul` before `Jun` in a directory listing and put a **space inside the file 
   View decides the column layout from the row width (see its format trap above), and the harmonic
   order from the frequencies.
 
+### ⚠️ One datalog row per cycle — the temperature message is the clock (2026-09-17)
+
+`Worker.store_data()` runs from the handler of the temperature queue, which the multiscan process feeds once
+per overtone. Until 2026-09-17 the multiscan row was gated on `self._overtone_number == 0`, a value that
+arrives on the **status** queue and was consumed **after** the temperature queue: inside one drain every
+pending temperature message saw the same stale number, so a cycle produced 0, 1 or 5 identical rows depending
+on how the GUI timer fell against the process (96 duplicate rows in 486 on 2026-09-11, 19 s gaps). Rules now:
+
+- the temperature message of an overtone is `[time, T, overtone, is_last_of_cycle]` and is posted **after**
+  that overtone's F and D messages (`Multiscan.elaborate_multi`; `_overtones_in_cycle` is set by `run()` from
+  the frequencies file);
+- the worker drains **F, D, then temperature, then status** (`consume` block): with separate multiprocessing
+  queues the drain order is the only ordering there is, and the row must find the last overtone's values
+  already in the stores;
+- a row is written when, and only when, `is_last_of_cycle` is set; the time-controlled sampling branch checks
+  its interval only at a cycle end, so every row is a whole cycle.
+
+⚠️ Never gate a write on a value from another queue. ⚠️ Serial and Calibration post two-element temperature
+messages and flag no cycle end: the single-frequency datalog is written on every call, as before.
+
 ### Plot Controls > N-SCALE, and the one thing that differs between the branches
 
 Pressed, every plotted frequency is divided by its harmonic order (1, 3, 5, 7, 9), so the overtones

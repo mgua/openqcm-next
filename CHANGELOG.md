@@ -5,6 +5,24 @@ Conventional Commits. Versions are marked by Git tags.
 
 ## [Unreleased] — `main`
 
+### Fixed — one datalog row per cycle: the duplicate and missing rows of the multiscan datalog (2026-09-17)
+
+`2da0705` The multiscan datalog had duplicate rows and gaps by construction: the row was written from the
+handler of the **temperature** queue (five messages per cycle, one per overtone) when the overtone number
+of the **status** queue read 0 — a different queue, consumed *after* the temperature queue in the drain. Every
+temperature message pending in one GUI tick was therefore judged against a stale value: 0, 1 or up to 5
+identical rows per cycle. Measured on the 2026-09-11 datalog of the impedance branch, where the code is the
+same: 96 duplicate rows in 486, identical `Relative_time` to the millisecond (the time step before a duplicate
+is 0.00 s), and 19 s gaps at the 95th percentile where a cycle wrote nothing. Now the temperature message is
+the datalog clock: `Multiscan.elaborate_multi` posts it **after** that overtone's F and D with two more fields,
+the overtone index and an end-of-cycle flag (`overtone == len(frequencies_file) − 1`); the worker drains F and D
+before the temperature queue and writes a row when, and only when, the flag is set — the time-controlled
+sampling branch too. A two-element message (Serial, Calibration, an older process) flags nothing. Headless:
+three cycles fed to the worker per overtone, per cycle and all at once each write exactly three rows carrying
+the last cycle's values; the previous code wrote 6, 0 and 0. ⚠️ Any noise statistic taken on a datalog before
+this date must drop the duplicate rows first (`docs/impedance-analysis/PLAN_signal_chain_noise.md` §2.3 on the
+branch).
+
 ### Added
 - **A TEC controller error locks ON/OFF and T SET** (`dcbac95`) — while the MTD415T reports an error
   only RESET stays live; the buttons are released when the register is clear again, not when the reset
