@@ -116,6 +116,11 @@ class Worker:
         
         # current overtone number 
         self._overtone_number = 0
+        # the datalog clock (multiscan): which overtone the last temperature
+        # message belonged to, and whether it closed a cycle -- read from THAT
+        # message, never from another queue (see _queue_data5, store_data)
+        self._cycle_overtone = 0
+        self._cycle_end = False
         # total number of overtone 
         self._number_of_peaks = 0
         
@@ -354,10 +359,15 @@ class Worker:
         self.consume_queue2()
         self.consume_queue3()
         self.consume_queue4()
-        self.consume_queue5() 
-        self.consume_queue6() 
+        # ⚠️ F and D BEFORE the temperature queue: the temperature message of an
+        # overtone is posted after its F and D and is what triggers the datalog
+        # row (store_data), so the row must find this overtone's values already
+        # in the stores. Queue order is the only ordering there is between
+        # separate multiprocessing queues.
         self.consume_queue_F_multi()
         self.consume_queue_D_multi()
+        self.consume_queue5() 
+        self.consume_queue6() 
         self.consume_queue_A_multi()
         self.consume_queue_P_multi()
         # the last lines the process wrote before it was told to stop
@@ -674,6 +684,12 @@ class Worker:
             self._calibration_cancelled = True
         self._t3_store = data[0] # time (unused)
         self._d3_store = data[1] # data
+        # multiscan since 2026-09-17: fields 2-3 are the overtone this message
+        # belongs to and the end-of-cycle flag (Multiscan.elaborate_multi). A
+        # two-element message (Serial, Calibration, an older process) flags no
+        # cycle end and therefore writes no multiscan row.
+        self._cycle_overtone = int(data[2]) if len(data) > 2 else self._overtone_number
+        self._cycle_end = bool(data[3]) if len(data) > 3 else False
         
         
         
@@ -878,7 +894,13 @@ class Worker:
                 # VER 0.1.4
                 # default / maximum sampling rate 
                 if (SAMPLING_TIME_INTERVAL == -1): 
-                    if (self._overtone_number == index_store):
+                    # one row per cycle, on the temperature message that closed
+                    # it. The old gate compared the STATUS queue's overtone
+                    # number, consumed after this queue, so every temperature
+                    # message pending in one drain was judged against a stale
+                    # value: 0, 1 or 5 identical rows per cycle (measured
+                    # 2026-09-17: 96 duplicate rows in 486, 19 s gaps).
+                    if self._cycle_end:
                         FileStorage.CSVsave_Multi(filenameCSV, Constants.csv_export_path, 
                                                   int((time_current - self._timestart))/_millisec, 
                                                   self._d3_store, self._F_store, self._D_store)
@@ -899,9 +921,10 @@ class Worker:
 
                     # VER 0.1.4 create a circular buffer of size corresponding to the length of the datalog sampling time
                     # init the new data in circular buffer 
-                    self._F_store_buffer[self._overtone_number].append(self._F_store[self._overtone_number])
-                    self._D_store_buffer[self._overtone_number].append(self._D_store[self._overtone_number])
-                    self._T_store_buffer[self._overtone_number].append(self._d3_store)
+                    # the overtone THIS message belongs to, not the status queue's
+                    self._F_store_buffer[self._cycle_overtone].append(self._F_store[self._cycle_overtone])
+                    self._D_store_buffer[self._cycle_overtone].append(self._D_store[self._cycle_overtone])
+                    self._T_store_buffer[self._cycle_overtone].append(self._d3_store)
                     
                     # averaging 
                     for idx in range(len(Constants.overtone_dummy)):
@@ -916,7 +939,9 @@ class Worker:
                     
                     # VER 0.1.4
                     # check the sampling time 
-                    if ( ((time_current - self.time_pre)/_millisec) >  SAMPLING_TIME_INTERVAL ):
+                    # a whole cycle in every row here too: the interval is checked
+                    # only when a cycle has just closed
+                    if self._cycle_end and ( ((time_current - self.time_pre)/_millisec) >  SAMPLING_TIME_INTERVAL ):
                         FileStorage.CSVsave_Multi(filenameCSV, Constants.csv_export_path, 
                                                   int((time_current - self._timestart)/_millisec), 
                                                   self._d3_store, self._F_store_buffer_averaging, self._D_store_buffer_averaging)

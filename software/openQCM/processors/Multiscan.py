@@ -210,7 +210,6 @@ class MultiscanProcess(multiprocessing.Process):
         # Adds "fake" frequency, dissipation and temperature meaan to parser queues
         self._parser3.add3([self._my_time,0]) 
         self._parser4.add4([self._my_time,0]) 
-        self._parser5.add5([self._my_time, self._temperature_mean])
         
         # VER 0.1.6 add TEC current value to the parser queue
         self._parser_current_tec.addCurrentTec([self._my_time, self._current_tec])
@@ -224,6 +223,18 @@ class MultiscanProcess(multiprocessing.Process):
         # add multi overtone frequency - dissipation and correpsonding time array to the parser queues
         self._parser_F_multi.add_F_multi( [ self._my_time_array, self._freq_range_mean] )
         self._parser_D_multi.add_D_multi( [ self._my_time_array, self._diss_mean] )
+
+        # The temperature message is also the DATALOG CLOCK: it carries which
+        # overtone this is and whether it is the last of the cycle, and it is
+        # posted AFTER the F and D messages of the same overtone so that, when
+        # the worker reads the end-of-cycle flag, this overtone's values are
+        # already in its stores (the worker drains F and D before this queue).
+        # Before 2026-09-17 the worker decided when to write a row from the
+        # overtone number of the STATUS queue, consumed after this one: a stale
+        # value, so a drain wrote 0, 1 or up to 5 identical rows per cycle
+        # (96 duplicates in 486 rows on 2026-09-11, and 19 s gaps).
+        self._parser5.add5([self._my_time, self._temperature_mean, overtone_number,
+                            overtone_number == self._overtones_in_cycle - 1])
         
         # TODO single sweeep data log 
        
@@ -265,6 +276,9 @@ class MultiscanProcess(multiprocessing.Process):
         self._parser3 = parser_process
         self._parser4 = parser_process
         self._parser5 = parser_process
+        # overtones per cycle, set by run() from the frequencies file; until then
+        # the last overtone cannot be told apart and no datalog row is flagged
+        self._overtones_in_cycle = 0
         # parser process for sweep info nd utility error
         self._parser6 = parser_process
         
@@ -510,6 +524,9 @@ class MultiscanProcess(multiprocessing.Process):
             
             # TODO get the number of overtones in the peak frequencies file 
             frequencies_file = self.load_frequencies_file() 
+            # how many overtones make one cycle: the datalog writes one row per
+            # cycle, on the temperature message of the last one (elaborate_multi)
+            self._overtones_in_cycle = len(frequencies_file)
             frequencies_file_length = len(frequencies_file)
             
             # Get array sweep paramaters 
