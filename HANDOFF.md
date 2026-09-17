@@ -453,6 +453,10 @@ on how the GUI timer fell against the process (96 duplicate rows in 486 on 2026-
   already in the stores;
 - a row is written when, and only when, `is_last_of_cycle` is set; the time-controlled sampling branch checks
   its interval only at a cycle end, so every row is a whole cycle.
+- the row's **instant is the process's**: field 0 of the message is the time of the overtone that closed the
+  cycle, and `Relative_time`, `Date`/`Time` (`CSVsave_Multi(..., when_s=)`) and the sampling readout come from
+  it, never from `now()` in the worker — two cycle ends drained in one GUI tick would otherwise share one stamp
+  (measured at the first bench run, three pairs 0.00 s apart after 13–18 s gaps).
 
 ⚠️ Never gate a write on a value from another queue. ⚠️ Serial and Calibration post two-element temperature
 messages and flag no cycle end: the single-frequency datalog is written on every call, as before.

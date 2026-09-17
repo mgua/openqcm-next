@@ -21,7 +21,13 @@ sampling branch too. A two-element message (Serial, Calibration, an older proces
 them, so a row drained behind a backlog carries ITS cycle's values and not the stores' (second commit: with three
 cycles drained at once the first row had taken the third's frequencies). Headless: three cycles fed to the
 worker per overtone, per cycle and all at once each write exactly three rows, each with its own cycle's values;
-the previous code wrote 6, 0 and 0. ⚠️ Any noise statistic taken on a datalog before
+the previous code wrote 6, 0 and 0. **Third commit, `4e491da`, after the first bench run** (115 rows in 15 min: 93 consecutive steps of
+7.84–8.07 s once the GUI was idle, but three pairs 0.00 s apart after 13–18 s gaps in the first three minutes):
+the row was stamped with the GUI's clock at drain time, so two cycle ends drained in one tick shared one
+`Relative_time`. The row's instant — `Relative_time`, the sampling readout, `Date`/`Time` — is now the
+**process's** time of the overtone that closed the cycle, carried by the clock message (field 0), and the run's
+zero is the first message's own time; `CSVsave_Multi` gains an optional `when_s` (default: the wall clock, as
+before). A late drain no longer moves a row in time. The temperature plot gets one x per reading. ⚠️ Any noise statistic taken on a datalog before
 this date must drop the duplicate rows first (`docs/impedance-analysis/PLAN_signal_chain_noise.md` §2.3 on the
 branch).
 
