@@ -250,6 +250,7 @@ openqcm-next/
 ├── firmware/                                # Teensy 4.0 firmware source (.ino + libraries)
 ├── research/                                # development materials (peak-detection prototypes, notes)
 └── docs/                                    # documentation (impedance analysis on the dedicated branch)
+    └── datasheet/                           # AD8302, AD9851, AD5251/AD5252, MTD415T, Teensy 4.0
 ```
 
 ---
