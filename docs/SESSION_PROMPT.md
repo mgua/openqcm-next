@@ -160,9 +160,10 @@ attivo solo con `OPENQCM_SWEEP_DUMP=1`, **sovrascritto a ogni sweep**):
 
 ### Ramo `impedance-analysis`
 
-- ⚠️ **Il ramo del fold per carico smorzato non è validato.** Manca un dump in
-  isopropanolo o in acqua sulle armoniche alte: in aria tutti e cinque gli overtone
-  danno "fold", quindi il ramo "no fold" non è mai esercitato.
+- Il ramo "no fold" (carico smorzato) è stato esercitato il 2026-09-11 in acqua e
+  isopropanolo (`research/air-ipa-water-1920-2026-09-11/raw-sweeps.md`): sulle armoniche
+  n ≥ 3 il minimo di fase è liscio, non una piega, come prevede il modello BVD. Il 3°
+  overtone in acqua sta esattamente sulla soglia 0.88.
   `Constants.PHASE_FOLD_BY_PEAK_DEPTH = False` rimette la soglia vecchia.
 - ⚠️ **La calibrazione OSL è parcheggiata, e non è la soluzione alla rotondità.**
   Dimostrato, non stimato: il modello d'errore lineare è bilineare, quindi Möbius,
@@ -170,9 +171,11 @@ attivo solo con `OPENQCM_SWEEP_DUMP=1`, **sovrascritto a ogni sweep**):
   (9.67 % prima, 9.74 % dopo). Per decidere quale Γ sia giusta serve un **quarto
   standard dentro il range operativo** (qualche pF, o 1–10 kΩ). Dettagli in
   `HANDOFF.md` §4.
-- ⚠️ **Provenienza dei dataset aria/isopropanolo di luglio**: le tabelle nel
-  CHANGELOG del ramo riportano risultati senza i dati grezzi dietro. Parcheggiato
-  fino alla messa in produzione.
+- **Dati di luglio senza provenienza: chiuso il 2026-10-01.** I numeri della campagna
+  offline di luglio (dati grezzi mai conservati) non sono più citati: HANDOFF §4 e
+  `ALGORITHM.md` del ramo riportano le tabelle ricalcolate sui nove dump dell'11
+  settembre (`research/air-ipa-water-1920-2026-09-11/handoff-tables.md`, uno script per
+  tabella). Il CHANGELOG del ramo resta come storico, per decisione di Marco.
 - `plot_color_multi_g`: palette esadecimale dei grafici di conduttanza, copia di una
   lista blu più vecchia, mai allineata alle due rampe.
 - Copia benigna di `savitzky_golay` in `sweep_data/plot_conductance.py`.

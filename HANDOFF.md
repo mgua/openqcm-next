@@ -1055,7 +1055,13 @@ MAG/PHASE signals (software post-processing; same firmware/protocol as the class
   before START, with its own datalog `<ts>_multi_lorentzian.csv`.
 - Live impedance panel (G, B, admittance locus), **Tools → Conductance Data** and **Impedance Fit
   (live)**; a unittest suite in `software/tests/` (69 tests).
-- Liquid campaigns (air, water, isopropanol; board 1920) in `research/` on the branch.
+- Liquid campaigns (air, water, isopropanol; board 1920, 2026-09-10 and 2026-09-11) in `research/`
+  on the branch. They are the measurements of record: since 2026-10-01 the branch's HANDOFF §4 and
+  `ALGORITHM.md` cite the tables re-derived on the nine dumps of 2026-09-11
+  (`research/air-ipa-water-1920-2026-09-11/handoff-tables.md`, one script per table) — δ from the
+  fold against the roundness fit, FIT 1 against FIT 2, the −28 dB mask, the divider's dynamic range,
+  the liquid baseline, the board phase φ_b. The July 2026 offline campaign, whose raw data were
+  never kept, is no longer cited.
 
 **Before a merge into `main`** (Marco's decision): the bench run T7 of
 `docs/impedance-analysis/PLAN_psl_live_estimator.md`, the validation block B (second sensor, second
