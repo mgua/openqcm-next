@@ -5,6 +5,23 @@ Conventional Commits. Versions are marked by Git tags.
 
 ## [Unreleased] — `main`
 
+### Changed — `Constants.environment` = 8, the production value (2026-10-01)
+
+`3b78344`: the averaging buffer and the warm-up go from the development value 3 (since 2026-07-29) to **8**,
+the production value fixed by Marco — not 10, as the documents had said until now. If the warm-up proves too
+long in practice it may be lowered again; the cost is purely metrological, since `core/averaging.py` keeps the
+outlier rejection at every buffer size. The banner on the constant says so.
+
+### Docs — stale statements corrected across HANDOFF, README, SESSION_PROMPT and CLEANUP_PLAN (2026-10-01)
+
+`e6e2610`: HANDOFF §4 (the impedance branch) rewritten as a summary of the branch as it is — the exact formula
+is implemented and published, `argmax` is the standard estimator, the phase-shifted Lorentzian an experimental
+opt-in — and points at cherry-pick, never `git merge main`. The README's Repository Structure is rebuilt from the
+tracked files (gone: `mainWindow_new_ui.py`, `data_view/`), its roadmap drops the PID window (it exists) and the
+exact formula (implemented on the branch). HANDOFF also loses an obsolete `_build_shell()` revert recipe, a
+firmware-updater bullet that contradicted itself, a stale `worker.py` line reference, deferred UI items that were
+done, and two garbled warning signs. CLEANUP_PLAN marked as executed in part. Dates aligned to 2026-10-01.
+
 ### Docs — component datasheets in the repo (2026-10-01)
 
 `a9aa77f`: `docs/datasheet/` brought from `impedance-analysis` as it stands there — AD8302 rev. B, AD9851 (the
