@@ -442,7 +442,7 @@ put `Jul` before `Jun` in a directory listing and put a **space inside the file 
 per overtone. Until 2026-09-17 the multiscan row was gated on `self._overtone_number == 0`, a value that
 arrives on the **status** queue and was consumed **after** the temperature queue: inside one drain every
 pending temperature message saw the same stale number, so a cycle produced 0, 1 or 5 identical rows depending
-on how the GUI timer fell against the process (96 duplicate rows in 486 on 2026-09-11, 19 s gaps). Rules now:
+on how the GUI timer fell against the process (95 duplicate rows in 486 on 2026-09-11, 19 s gaps). Rules now:
 
 - the temperature message of an overtone is `[time, T, overtone, is_last_of_cycle, F[], D[]]` (the last two
   copies of the cycle's values, which the row is written from) and is posted **after**

@@ -35,8 +35,8 @@ handler of the **temperature** queue (five messages per cycle, one per overtone)
 of the **status** queue read 0 — a different queue, consumed *after* the temperature queue in the drain. Every
 temperature message pending in one GUI tick was therefore judged against a stale value: 0, 1 or up to 5
 identical rows per cycle. Measured on the 2026-09-11 datalog of the impedance branch, where the code is the
-same: 96 duplicate rows in 486, identical `Relative_time` to the millisecond (the time step before a duplicate
-is 0.00 s), and 19 s gaps at the 95th percentile where a cycle wrote nothing. Now the temperature message is
+same: 95 duplicate rows in 486, each within 0.021 s of the row before it on `Relative_time` (corrected 2026-10-01:
+this entry said 96, identical to the millisecond), and 19 s gaps at the 95th percentile where a cycle wrote nothing. Now the temperature message is
 the datalog clock: `Multiscan.elaborate_multi` posts it **after** that overtone's F and D with two more fields,
 the overtone index and an end-of-cycle flag (`overtone == len(frequencies_file) − 1`); the worker drains F and D
 before the temperature queue and writes a row when, and only when, the flag is set — the time-controlled
