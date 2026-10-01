@@ -3398,7 +3398,7 @@ class MainWindow(QtGui.QMainWindow):
                # `_k >= environment`, so the oldest timestamp belongs to a
                # sample that is never drawn, and the first point that IS drawn
                # landed at `environment x sweep_period` on the axis: measured at
-               # 4-6 s with environment = 3, and 15-20 s at the production 10.
+               # 4-6 s with environment = 3, and 15-20 s with 10.
                #
                # ⚠️ nanmin was a deliberate choice, recorded in HANDOFF S3, on
                # the reading that zero means "acquisition started". It is
