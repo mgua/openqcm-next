@@ -10,7 +10,7 @@ The two previous copies drifted apart and started contradicting each other.
 Keep it short and keep it true. It is a shortcut, not the source: HANDOFF.md and
 the `## [Unreleased]` entries in CHANGELOG.md are.
 
-Last aligned: 2026-09-07.
+Last aligned: 2026-10-01.
 -->
 
 # openQCM NEXT — prompt per iniziare una nuova sessione
@@ -123,9 +123,10 @@ attivo solo con `OPENQCM_SWEEP_DUMP=1`, **sovrascritto a ogni sweep**):
 
 ## Cose aperte
 
-### Tre interruttori da rimettere prima di una build di produzione
+### Interruttori da rimettere prima di una build di produzione
 
-- ⚠️ `Constants.environment = 3` → **10**, su **entrambi** i rami. Motivo ormai
+- `Constants.environment` è già al valore di produzione **8**, su **entrambi** i rami
+  (2026-10-01, Marco). Se il warm-up risulta troppo lungo si può riabbassare: il costo è
   solo metrologico (la fragilità è stata risolta da `core/averaging.py`).
 - ⚠️ `Constants.accept_test_firmware = True` → **False**, su entrambi i rami. Fa
   passare il firmware `-TEST` della scheda prototipo.
@@ -193,12 +194,12 @@ attivo solo con `OPENQCM_SWEEP_DUMP=1`, **sovrascritto a ogni sweep**):
   `Serial.baseline_correction`, `Calibration.baseline_estimation`.
 - Zeri spinti ai grafici durante il warm-up del Multiscan.
 
-### File non tracciati (stato al 2026-09-07)
+### File non tracciati (stato al 2026-10-01)
 
 - `CODE_ANALYSIS.md` su `main`: audit non tracciato, **fuori perimetro** finché non
   dico il contrario. Non partire da lì.
-- `software/openQCM_Next_py_0.1.5c_TEST_teensy.ino.hex` e i due hex accanto: lasciati
-  lì di proposito, decideremo dopo.
+- `software/openQCM_Next_py_0.1.5c_TEST_teensy.ino.hex`, accanto ai due hex già tracciati
+  (`0.1.5` e `0.1.5a`): lasciato lì di proposito, decideremo dopo.
 
 ⚠️ **Non tutti i dati acquisiti vanno nel repo.** Le corse fatte fuori specifica —
 per esempio la scheda a 150 MHz alimentata a 3.3 V — sono diagnostica, non prove, e

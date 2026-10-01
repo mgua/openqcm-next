@@ -5,6 +5,8 @@
 > Goal: remove dead code, unused structures, dead comments and redundancies with
 > **zero behavior change**. Working language: Italian in chat, English in the repo.
 > Generated: 2026-07-20. Baseline: `main` @ 630e898, working tree clean.
+> ⚠️ Executed only in part since (dead Qt-Designer UI files `d23333e`, `data_view/`, the hidden
+> `tab_2` `51034e8`): re-check every item against HEAD before acting on it (note of 2026-10-01).
 
 ---
 
@@ -27,9 +29,11 @@ code; when confidence is medium, verify before removing (see the per-item confid
   file may be consumed by another. Every "unused constant" below was grep-checked
   tree-wide, but re-confirm before deleting.
 - **UI builder contract**: `ui/mainWindow_ui.py` intentionally keeps some widgets alive
-  and hidden (`pButton_Stop`, `pButton_Reference_Not`, the `tab_2` PID block, `l1`,
-  `info11`, `line*`). These are **not** dead — the controller uses them. Leave them.
-- **GUI can't be tested headless.** After each phase run the static checks below; leave
+  and hidden (`pButton_Stop`, `pButton_Reference_Not`, `l1`, `info11`, `line*`). These are **not**
+  dead — the controller uses them. Leave them. (The hidden `tab_2` PID block was in this list;
+  it was removed in `51034e8`, 2026-09-08.)
+- **GUI testing headless is limited.** Windows can be built and fed offscreen (HANDOFF §6), but
+  the tabbed windows must not be shown; after each phase run the static checks below and leave
   the on-device smoke test to a human at the end.
 
 **Suggested workflow:**

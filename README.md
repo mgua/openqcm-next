@@ -202,55 +202,50 @@ python run.py          # or: python -m openQCM
 
 ```text
 openqcm-next/
-├── software/                                # Python application
-│   ├── run.py                               # application entry point (thin launcher)
-│   ├── openQCM/                             # main package
-│   │   ├── __main__.py                      # `python -m openQCM` entry
-│   │   ├── app.py                           # OPENQCM application class (bootstrap)
+├── software/                                  # Python application
+│   ├── run.py                                 # entry point (thin launcher)
+│   ├── environment.yml · requirements.txt     # conda / pip dependencies
+│   ├── openQCM/                               # main package
+│   │   ├── __main__.py · app.py               # `python -m openQCM`, OPENQCM bootstrap
 │   │   ├── core/
-│   │   │   ├── constants.py                 # configuration parameters & tunables
-│   │   │   ├── worker.py                    # multiprocessing manager (queues → ring buffers)
-│   │   │   └── ringBuffer.py                # circular buffer for time series
-│   │   ├── common/
-│   │   │   ├── architecture.py              # OS / platform detection
-│   │   │   ├── arguments.py                 # CLI arguments & logging setup
-│   │   │   ├── fileManager.py               # file / path helpers
-│   │   │   ├── fileStorage.py               # CSV data logging
-│   │   │   ├── logger.py                    # application logger
-│   │   │   └── switcher.py                  # source switcher
+│   │   │   ├── worker.py                      # queues, processes, ring buffers, datalog writer
+│   │   │   ├── constants.py                   # configuration parameters and tunables
+│   │   │   ├── resonance.py                   # peak detection, dissipation band, filtering chain
+│   │   │   ├── averaging.py                   # robust averaging of the ring buffers
+│   │   │   ├── logAnalysis.py                 # two-window statistics over a logged run
+│   │   │   └── ringBuffer.py                  # circular buffer for time series
 │   │   ├── processors/
-│   │   │   ├── Serial.py                    # serial acquisition process (SerialProcess)
-│   │   │   ├── Multiscan.py                 # multi-overtone acquisition & processing
-│   │   │   ├── Calibration.py               # peak-detection / calibration process
-│   │   │   ├── Parser.py                    # data-queue distribution
-│   │   │   ├── Sigma_Clip.py                # sigma-clipping filter
-│   │   │   ├── Simulator.py                 # simulated data source
-│   │   │   └── SocketClient.py              # socket data source
+│   │   │   ├── Multiscan.py                   # multi-overtone acquisition and processing
+│   │   │   ├── Serial.py                      # single-overtone acquisition
+│   │   │   ├── Calibration.py                 # peak detection
+│   │   │   ├── Parser.py                      # holds the multiprocessing queues
+│   │   │   └── Sigma_Clip.py · Simulator.py · SocketClient.py
+│   │   ├── common/
+│   │   │   ├── fileStorage.py                 # CSV datalog
+│   │   │   ├── tecStatus.py · tecReset.py · pidQuery.py   # TEC controller (MTD415T) over serial
+│   │   │   ├── sweepDump.py                   # raw sweep dump (development only)
+│   │   │   └── architecture.py · arguments.py · fdLimit.py · fileManager.py · logger.py · switcher.py
 │   │   ├── ui/
-│   │   │   ├── mainWindow.py                # main window controller
-│   │   │   ├── mainWindow_new_ui.py         # generated Qt UI layout
-│   │   │   └── popUp.py                     # notification dialogs
-│   │   ├── data_view/
-│   │   │   ├── main.py                      # standalone CSV data viewer
-│   │   │   ├── mplwidget.py                 # matplotlib widget
-│   │   │   └── qt_designer_ui.py            # generated Qt UI
-│   │   ├── util/
-│   │   │   ├── ReadLine.py                  # serial line reader helper
-│   │   │   └── embedding_in_qt_sgskip.py    # matplotlib-in-Qt embedding helper
-│   │   ├── sweep_data/
-│   │   │   ├── 1.txt / 3.txt / 5.txt / 7.txt / 9.txt   # sweep data read by the Raw Data view
-│   │   │   └── plot_sweep_spline.py         # Raw Data view plotting
-│   │   ├── Calibration_5MHz.txt / Calibration_10MHz.txt  # calibration lookup tables
-│   │   ├── PeakFrequencies.txt / PeakFrequenciesRT.txt   # detected peak frequencies
-│   │   ├── config.txt                       # sweep / sampling parameters
-│   │   ├── res/ , icon/                     # Qt resources (.ui files, icons)
-│   │   └── firmware_update/                 # bundled Teensy flashing tools (Teensy.app, TyUploader.exe, .hex)
-│   ├── docs/                                # license (GPL)
-│   └── *.ino.hex                            # firmware release images
-├── firmware/                                # Teensy 4.0 firmware source (.ino + libraries)
-├── research/                                # development materials (peak-detection prototypes, notes)
-└── docs/                                    # documentation (impedance analysis on the dedicated branch)
-    └── datasheet/                           # AD8302, AD9851, AD5251/AD5252, MTD415T, Teensy 4.0
+│   │   │   ├── mainWindow.py · mainWindow_ui.py   # main window: controller and programmatic layout
+│   │   │   ├── rawDataView.py · peakDataView.py · dataLogView.py   # data views
+│   │   │   ├── pidControlDialog.py · tecCurrentView.py             # TEC windows
+│   │   │   └── theme.py · widgets.py · plotMenu.py · popUp.py
+│   │   ├── sweep_data/                        # Raw Data View plotting; sweep files are runtime
+│   │   │   └── plot_sweep_spline.py
+│   │   ├── util/                              # serial line reader, matplotlib-in-Qt helper
+│   │   ├── res/ · icon/                       # icons and images
+│   │   ├── firmware_update/                   # Teensy loaders (macOS, Windows) and firmware images
+│   │   ├── config.txt                         # sweep / sampling parameters (per machine)
+│   │   ├── PeakFrequencies.txt · PeakFrequenciesRT.txt   # detected peaks (runtime, versioned)
+│   │   └── Calibration_5MHz.txt · Calibration_10MHz.txt  # peak-detection sweeps (runtime)
+│   ├── *.ino.hex                              # older firmware release images
+│   └── docs/                                  # sweep file format, license (GPL)
+├── firmware/                                  # Teensy 4.0 sketches: 0.1.5a/b/c, -TEST variants, serial-number writer
+├── research/                                  # development materials (peak-detection prototypes, notes)
+├── docs/                                      # session prompt (impedance analysis on the dedicated branch)
+│   └── datasheet/                             # AD8302, AD9851, AD5251/AD5252, MTD415T, Teensy 4.0
+├── CHANGELOG.md · HANDOFF.md                  # history and developer notes
+└── README.md
 ```
 
 ---
@@ -294,21 +289,19 @@ The `impedance-analysis` branch is experimental and not merged into `main`. Its 
 
 Selected planned work (non-exhaustive):
 
-- GUI polish (the redesign and the scientific menu are done): harmonise the remaining status
-  colors toward the blue/brown palette, a dedicated **Advanced Temperature Control (PID)** window,
-  and a few minor layout refinements.
+- GUI polish (the redesign, the scientific menu and the **PID Control** window are done): harmonise
+  the remaining status colors toward the blue/brown palette, and a few minor layout refinements.
 - Port selected backend improvements from the mature **openQCM Q-1** codebase: **disconnected-sensor
   detection**, **tracking safety** (auto-disable/resume), and peak-detection validations.
 - Retire the superseded firmware folders (`0.1.5a`, `0.1.5b`) once no board runs them; `0.1.5c` is
   the current pair, and the no-TEC `-TEST` variant is kept while the prototype board is in use.
-- Merge the `impedance-analysis` feature once stabilized (make the conductance method selectable rather than hardwired).
-- Implement the exact complex-impedance conductance formula (currently the approximate form is used).
+- Merge the `impedance-analysis` feature once stabilized (make the conductance method selectable rather than hardwired). The exact complex-impedance conductance formula is already implemented on that branch.
 
 ---
 
 ## License
 
-This project is distributed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0). See the license text under `software/openQCM/docs/`.
+This project is distributed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0). See the license text under `software/docs/`.
 
 ---
 
