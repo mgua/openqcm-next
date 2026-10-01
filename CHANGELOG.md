@@ -5,6 +5,14 @@ Conventional Commits. Versions are marked by Git tags.
 
 ## [Unreleased] — `main`
 
+### Docs — the impedance branch's measurements of record, as seen from `main` (2026-10-01)
+
+`e90bff9`: HANDOFF §4 (the summary of `impedance-analysis`) records that the branch's HANDOFF and `ALGORITHM.md` now
+cite the tables re-derived on the nine dumps of 2026-09-11 (`research/air-ipa-water-1920-2026-09-11/handoff-tables.md`
+on the branch) instead of the July 2026 offline campaign, whose raw data were never kept. `docs/SESSION_PROMPT.md`:
+the no-fold branch of the phase unfold was exercised on 2026-09-11, and the item on the provenance of the July
+datasets is closed.
+
 ### Changed — `Constants.environment` = 8, the production value (2026-10-01)
 
 `3b78344`: the averaging buffer and the warm-up go from the development value 3 (since 2026-07-29) to **8**,
