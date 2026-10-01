@@ -1054,7 +1054,8 @@ MAG/PHASE signals (software post-processing; same firmware/protocol as the class
   phase-shifted Lorentzian fitted to G (`core/lorentzian.py`), chosen per run in Measurement Setup
   before START, with its own datalog `<ts>_multi_lorentzian.csv`.
 - Live impedance panel (G, B, admittance locus), **Tools → Conductance Data** and **Impedance Fit
-  (live)**; a unittest suite in `software/tests/` (69 tests).
+  (live)**; a unittest suite in `software/tests/` (70 tests); a standard run prints no per-overtone
+  line on the console (2026-10-01).
 - Liquid campaigns (air, water, isopropanol; board 1920, 2026-09-10 and 2026-09-11) in `research/`
   on the branch. They are the measurements of record: since 2026-10-01 the branch's HANDOFF §4 and
   `ALGORITHM.md` cite the tables re-derived on the nine dumps of 2026-09-11
