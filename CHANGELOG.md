@@ -5,6 +5,12 @@ Conventional Commits. Versions are marked by Git tags.
 
 ## [Unreleased] — `main`
 
+### Removed — `research/notes/` (2026-10-01)
+
+`4009d36`: `v_0_1_6_py_notes.py` and `program_flow_diagram.png`, notes on the `parser6` / `queue6` path of v0.1.6 as
+imported in July (eleven queues in `ParserProcess`, five fields from `get_ser_error()`). The code has moved on,
+nothing referenced them; Marco asked for them to go, on both branches. The README's Repository Structure follows.
+
 ### Docs — the impedance branch's measurements of record, as seen from `main` (2026-10-01)
 
 `e90bff9`: HANDOFF §4 (the summary of `impedance-analysis`) records that the branch's HANDOFF and `ALGORITHM.md` now

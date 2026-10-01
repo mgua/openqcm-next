@@ -241,7 +241,7 @@ openqcm-next/
 │   ├── *.ino.hex                              # older firmware release images
 │   └── docs/                                  # sweep file format, license (GPL)
 ├── firmware/                                  # Teensy 4.0 sketches: 0.1.5a/b/c, -TEST variants, serial-number writer
-├── research/                                  # development materials (peak-detection prototypes, notes)
+├── research/                                  # development materials (peak-detection prototypes)
 ├── docs/                                      # session prompt (impedance analysis on the dedicated branch)
 │   └── datasheet/                             # AD8302, AD9851, AD5251/AD5252, MTD415T, Teensy 4.0
 ├── CHANGELOG.md · HANDOFF.md                  # history and developer notes
