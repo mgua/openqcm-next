@@ -5,6 +5,12 @@ Conventional Commits. Versions are marked by Git tags.
 
 ## [Unreleased] — `main`
 
+### Docs — component datasheets in the repo (2026-10-01)
+
+`a9aa77f`: `docs/datasheet/` brought from `impedance-analysis` as it stands there — AD8302 rev. B, AD9851 (the
+DDS), AD5251/AD5252 (the digital potentiometer), MTD415T, Teensy 4.0 cards. Files only, checked out from the branch
+(no cherry-pick: the branch commits also touch its README). The README's Repository Structure lists the folder.
+
 ### Fixed — one datalog row per cycle: the duplicate and missing rows of the multiscan datalog (2026-09-17)
 
 `2da0705`, and the follow-up on the values. The multiscan datalog had duplicate rows and gaps by construction: the row was written from the

@@ -1352,6 +1352,10 @@ selectable).
 
 ## 6. Conventions and gotchas
 
+- **Hardware references in the repo** (2026-10-01): `docs/datasheet/` — AD8302 rev. B, AD9851, AD5251/AD5252,
+  MTD415T, Teensy 4.0. ⚠️ Read them before stating a component value, a pin or a detector law. The same folder
+  lives on `impedance-analysis`, which is where new datasheets are added first; the schematic
+  (`docs/schematic/`) is on that branch only.
 - **PyQt5 = 5.9.2 is mandatory**: the GUI uses the classic `QtGui` widget namespace
   (`QtGui.QMainWindow`, `QtGui.QPushButton`…); PyQt5 ≥5.11 moves widgets to `QtWidgets` and breaks the
   app.
