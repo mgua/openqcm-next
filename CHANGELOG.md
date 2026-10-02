@@ -23,7 +23,8 @@ carried the last of the previous sweep). Found by Marco.
   reading 0.18–0.37° low, V_MAG 0.8–2.8 mV high, the divider magnitude M 0.3–1.1 % low — small for the
   amplitude method, not negligible for the exact inversion of the impedance branch. **Every dataset acquired
   before 0.1.5d carries it**; within a sweep it can be undone offline, `m_i = v_i − v_(i−1)/500`. HANDOFF §3
-  "Firmware 0.1.5d", README, SESSION_PROMPT.
+  "Firmware 0.1.5d", README, SESSION_PROMPT, and (`3def0af`) a warning at the end of
+  `software/docs/DATA_FORMAT_sweep_data.md` for anyone reading archived sweep files.
 
 ### Docs — the sweep-file format: column 3 peaks at resonance (2026-10-02)
 
