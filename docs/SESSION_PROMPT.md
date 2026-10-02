@@ -10,7 +10,7 @@ The two previous copies drifted apart and started contradicting each other.
 Keep it short and keep it true. It is a shortcut, not the source: HANDOFF.md and
 the `## [Unreleased]` entries in CHANGELOG.md are.
 
-Last aligned: 2026-10-01.
+Last aligned: 2026-10-02.
 -->
 
 # openQCM NEXT — prompt per iniziare una nuova sessione
@@ -136,10 +136,15 @@ attivo solo con `OPENQCM_SWEEP_DUMP=1`, **sovrascritto a ogni sweep**):
 
 ### Aggiornamento firmware
 
+- **Firmware attuale `0.1.5d`** (2026-10-02): le due somme della media di ogni punto
+  ripartono da zero. Fino a `0.1.5c` (e nelle `-TEST`) non venivano mai azzerate e ogni
+  punto conteneva 1/500 del precedente, +0.2 % sui conteggi: **tutti i dataset acquisiti
+  prima ne sono affetti**, campagne di `research/` comprese. Dettagli in `HANDOFF.md` §3,
+  "Firmware 0.1.5d". Le schede vanno riflashate.
 - ✅ **Procedura verificata su macOS** il 2026-09-01: l'updater passa l'hex al
   Teensy Loader, rilascia l'handle, e la finestra va a Disconnected con un popup
-  informativo. `firmware_update/` porta ora **entrambe** le immagini `0.1.5c`
-  (produzione e `-TEST`) e `_firmware_image()` sceglie in base alla versione che la
+  informativo. `firmware_update/` porta ora **entrambe** le immagini `0.1.5d`
+  (produzione e `-TEST`, dal 2026-10-02; prima `0.1.5c`) e `_firmware_image()` sceglie in base alla versione che la
   scheda dichiara.
 - ⚠️ **Il ramo Windows non è mai stato eseguito.** Va provato in fase di produzione.
 - ⚠️ `firmware_update/` contiene ancora l'immagine `0.1.5` (tre versioni indietro),

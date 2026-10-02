@@ -5,6 +5,26 @@ Conventional Commits. Versions are marked by Git tags.
 
 ## [Unreleased] — `main`
 
+### Fixed — firmware 0.1.5d: the sweep-average sums are reset at every frequency point (2026-10-02)
+
+`712d3af`, `5a98912`. In `0.1.5a`, `0.1.5b` and `0.1.5c` (and the `-TEST` variants) `value` and `value2`, the
+sums of the 500 ADC readings of each frequency point, were globals set to 0 at power-up and never reset: after
+the division they held the mean just printed, so every point carried 1/500 of the previous one
+(`v_i = m_i + v_(i−1)/500`, **+0.2 %** on a slowly varying signal, both channels; the first point of a sweep
+carried the last of the previous sweep). Found by Marco.
+- `firmware/openQCM_Next_py_0.1.5d_teensy/` and `..._0.1.5d_TEST_teensy/`, copied from 0.1.5c: both sums set to
+  0 before each point's readings, a HISTORY entry in the sketch header, `FW_VERSION` `0.1.5d` / `0.1.5d-TEST`.
+  Same averaging, same wire format, same commands. Built with `teensy:avr 1.58.1` (FLASH code 55 120 B and
+  45 564 B; the 0.1.5d `loop()` has the two extra stores, the image differs from 0.1.5c's). 0.1.5c stays in
+  the tree as the previous step.
+- Host: `Constants.FW_VERSION` → `0.1.5d`; `firmware_update/` ships the two 0.1.5d images in place of 0.1.5c,
+  and `_firmware_image()` finds them by name. A board on 0.1.5c is offered the update.
+- Downstream, from the conversion formulas on the range of the 2026-09-11 sweeps (not measured): the phase
+  reading 0.18–0.37° low, V_MAG 0.8–2.8 mV high, the divider magnitude M 0.3–1.1 % low — small for the
+  amplitude method, not negligible for the exact inversion of the impedance branch. **Every dataset acquired
+  before 0.1.5d carries it**; within a sweep it can be undone offline, `m_i = v_i − v_(i−1)/500`. HANDOFF §3
+  "Firmware 0.1.5d", README, SESSION_PROMPT.
+
 ### Docs — the sweep-file format: column 3 peaks at resonance (2026-10-02)
 
 `f00d660`: `software/docs/DATA_FORMAT_sweep_data.md` said that column 3 of `<n>.txt` *dips* at resonance. Column 3

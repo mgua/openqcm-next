@@ -114,7 +114,10 @@ A legacy `FindPeak` routine remains available as a fallback.
 
 ### Hardware Integration
 
-- **Teensy 4.0** microcontroller firmware (see [`firmware/`](firmware/)); USB-CDC serial link at 115200 baud, 8N1
+- **Teensy 4.0** microcontroller firmware (see [`firmware/`](firmware/)), current version **`0.1.5d`**; USB-CDC serial link at 115200 baud, 8N1
+- Each sweep point is the mean of 500 synchronized ADC readings per channel. Since `0.1.5d` the two sums
+  restart from zero at every point; up to `0.1.5c` they were never reset and each point carried 1/500 of
+  the previous one (+0.2 % on the counts)
 - Frequency sweep command protocol (`start;stop;step`) with a magnitude/phase ADC data stream, and
   single-letter commands beside it: `F` firmware version, `S` machine identification number,
   `Q` end the sweep in progress, plus the TEC set
@@ -234,13 +237,13 @@ openqcm-next/
 │   │   │   └── plot_sweep_spline.py
 │   │   ├── util/                              # serial line reader, matplotlib-in-Qt helper
 │   │   ├── res/ · icon/                       # icons and images
-│   │   ├── firmware_update/                   # Teensy loaders (macOS, Windows) and firmware images
+│   │   ├── firmware_update/                   # Teensy loaders (macOS, Windows) and the 0.1.5d images
 │   │   ├── config.txt                         # sweep / sampling parameters (per machine)
 │   │   ├── PeakFrequencies.txt · PeakFrequenciesRT.txt   # detected peaks (runtime, versioned)
 │   │   └── Calibration_5MHz.txt · Calibration_10MHz.txt  # peak-detection sweeps (runtime)
 │   ├── *.ino.hex                              # older firmware release images
 │   └── docs/                                  # sweep file format, license (GPL)
-├── firmware/                                  # Teensy 4.0 sketches: 0.1.5a/b/c, -TEST variants, serial-number writer
+├── firmware/                                  # Teensy 4.0 sketches: 0.1.5a/b/c/d, -TEST variants, serial-number writer
 ├── research/                                  # development materials (peak-detection prototypes)
 ├── docs/                                      # session prompt (impedance analysis on the dedicated branch)
 │   └── datasheet/                             # AD8302, AD9851, AD5251/AD5252, MTD415T, Teensy 4.0
@@ -293,7 +296,7 @@ Selected planned work (non-exhaustive):
   the remaining status colors toward the blue/brown palette, and a few minor layout refinements.
 - Port selected backend improvements from the mature **openQCM Q-1** codebase: **disconnected-sensor
   detection**, **tracking safety** (auto-disable/resume), and peak-detection validations.
-- Retire the superseded firmware folders (`0.1.5a`, `0.1.5b`) once no board runs them; `0.1.5c` is
+- Retire the superseded firmware folders (`0.1.5a`, `0.1.5b`, `0.1.5c`) once no board runs them; `0.1.5d` is
   the current pair, and the no-TEC `-TEST` variant is kept while the prototype board is in use.
 - Merge the `impedance-analysis` feature once stabilized (make the conductance method selectable rather than hardwired). The exact complex-impedance conductance formula is already implemented on that branch.
 

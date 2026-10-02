@@ -2,7 +2,7 @@
 
 > Technical starting point to continue development of the software and of the
 > `impedance-analysis` branch. Working language: Italian in chat, English in the repo.
-> Last updated: 2026-10-01.
+> Last updated: 2026-10-02.
 >
 > Starting a new session: paste [`docs/SESSION_PROMPT.md`](docs/SESSION_PROMPT.md)
 > as the first message. It is a shortcut into this file, not a replacement for it.
@@ -778,7 +778,8 @@ Since 2026-08-28, each with a section of its own above: **datalog file names on 
 (`2026-08-31_12-27-50_multi.csv`); **the Q-1 elapsed-time axis** on the four real-time plots;
 **the menu bar homologous with Q-1 v3.0**; **the machine identification number** end to end —
 programmer sketch, firmware `'S'`, host query, sidebar and window title; **firmware `0.1.5c` with
-`'Q'`** and the host waiting for the board to fall silent before it asks anything. All see
+`'Q'`** and the host waiting for the board to fall silent before it asks anything; **firmware
+`0.1.5d`** (2026-10-02), whose sweep average no longer carries the previous point. All see
 CHANGELOG.
 
 ### Asking the board a question while it may still be talking
@@ -913,12 +914,14 @@ leading zeros on the series.
 worktrees' sketch) or with `NO_SERIAL` when the magic byte is absent — it never invents or writes
 one.
 
-The command arrived with `0.1.5b`; the current pair is **`0.1.5c`**, which added `'Q'`. Each
-version is its own pair of folders, production and no-TEC `-TEST`:
+The command arrived with `0.1.5b`; `0.1.5c` added `'Q'`; the current pair is **`0.1.5d`**, which
+fixed the sweep average (see "Firmware 0.1.5d" below). Each version is its own pair of folders,
+production and no-TEC `-TEST`:
 
 | folder | state |
 |---|---|
-| `openQCM_Next_py_0.1.5c_teensy` + `_TEST_` | ⭐ **current** — `'S'` and `'Q'`, what `Constants.FW_VERSION` expects |
+| `openQCM_Next_py_0.1.5d_teensy` + `_TEST_` | ⭐ **current** — `'S'`, `'Q'` and the reset sweep sums, what `Constants.FW_VERSION` expects |
+| `openQCM_Next_py_0.1.5c_teensy` + `_TEST_` | superseded — its average carries 1/500 of the previous point. Delete once no board runs it |
 | `openQCM_Next_py_0.1.5b_teensy` + `_TEST_` | superseded — `'S'` only. Delete once no board runs it |
 | `openQCM_Next_py_0.1.5a_teensy` + `_TEST_` | superseded — neither. Delete once no board runs it |
 
@@ -973,7 +976,7 @@ other.
 
 ⚠️ **`Constants.FW_VERSION` moves with the firmware.** The host compares the reply to `'F'` against
 that string and pops a firmware-update warning when it does not match, so a version bump that stops
-at the sketch turns into a warning on every connect. It is `'0.1.5c'` now.
+at the sketch turns into a warning on every connect. It is `'0.1.5d'` now (since 2026-10-02).
 
 #### Bench verification — complete, 2026-09-01
 
@@ -1010,7 +1013,7 @@ wrong answer and no answer at all looked identical from outside — they log the
 The comparison is `_firmware_is_current()`, **one function** — the check appears four times in
 `get_firmware_version` and a rule spelled out four times is a rule that drifts. It accepts
 `FW_VERSION` and, while `Constants.accept_test_firmware` is on, `FW_VERSION + '-TEST'`: the
-prototype board answers `0.1.5c-TEST` and used to raise the update warning on every connect, though
+prototype board answers `0.1.5d-TEST` (until 2026-10-02 `0.1.5c-TEST`) and used to raise the update warning on every connect, though
 it speaks the whole protocol. The suffix says which board is on the bench, not that the firmware is
 older.
 
@@ -1023,8 +1026,33 @@ rejects `-TEST` and everything else that is not an exact match.
 but prints the obsolete dashed form. The specification calls for v2.1 there. Until that is updated
 the two sketches agree on the EEPROM and disagree on what they print.
 
+### Firmware 0.1.5d — each point's average no longer carries the previous point (2026-10-02)
+
+In `0.1.5a`, `0.1.5b` and `0.1.5c` (and their `-TEST` variants) the two sums of the sweep average,
+`value` and `value2` — 500 ADC readings per frequency point, magnitude and phase channel — were
+globals set to 0 at power-up and **never reset**. After the division they held the mean just
+printed, so each point's sum started from it: printed `v_i = m_i + v_(i−1)/500`. On a slowly varying
+signal that is `m·500/499`, **+0.2 % on the counts of both channels**; the first point of every sweep
+also carried 1/500 of the last point of the sweep before, i.e. of another overtone. `0.1.5d` sets
+both sums to 0 before each point's readings; nothing else changes (averaging, wire format,
+commands). Found by Marco, 2026-10-02.
+
+What +0.2 % of the counts means downstream — from the host's conversion formulas
+(`_Vmag_bit_mag`, `_Vphase_bit_phase`) applied to the range of the 2026-09-11 sweeps, **not
+measured**: V_PHS is proportional to the counts, so the phase reading `(1.8 − V_PHS)/0.01` comes out
+0.18–0.37° low; `V_MAG + 0.61069 V` is proportional to the counts, so V_MAG reads 0.8–2.8 mV high and
+the divider magnitude `M = R17·10^((V_CP − V_MAG)/0.6)` 0.3–1.1 % low. The amplitude method of `main`
+should barely see it — a near-uniform scale factor moves neither a peak nor a −0.3 dB width; not
+verified — while the exact inversion of the impedance branch does, because near resonance `R_q = M·cos φ − R17` is a
+difference of close numbers.
+
+⚠️ **Every dataset acquired before 0.1.5d carries it** — all the campaigns in `research/` included.
+Within one sweep the recursion is exact and can be undone offline: `m_i = v_i − v_(i−1)/500`, on the
+counts or on V_PHS and `V_MAG + 0.61069 V`, which are proportional to them (the first point only up to
+1/500 of the previous sweep's last point; the firmware prints two decimals).
+
 ### ⚠️ TEST-ONLY firmware variant (no-TEC board) — temporary, will be removed
-`firmware/openQCM_Next_py_0.1.5c_TEST_teensy/` (`0.1.5c-TEST`) is a **throwaway internal
+`firmware/openQCM_Next_py_0.1.5d_TEST_teensy/` (`0.1.5d-TEST`) is a **throwaway internal
 variant** for a special bench board that **does not mount the TEC section**. It is a copy of the
 production firmware of the same version with all MTD415T/Serial1, MCP9808, fan and TEC-pin code removed (on a
 no-TEC board those blocking Serial1 reads stall the sweep), and the temperature field **simulated**
@@ -1034,8 +1062,8 @@ Teensy 4.0 die temperature). The DDS/ADC sweep engine and the host wire format a
 accepted as no-ops. **Do not build features on this variant.** It exists for a prototype board and
 will be deleted once that board is retired — but it is **kept in step with production while that
 board is in use**: a change to the host/firmware protocol goes into both sketches, as the `'S'`
-and `'Q'` commands did on 2026-08-31. Production firmware is
-`firmware/openQCM_Next_py_0.1.5c_teensy/`.
+and `'Q'` commands did on 2026-08-31 and the reset sweep sums on 2026-10-02. Production firmware is
+`firmware/openQCM_Next_py_0.1.5d_teensy/`.
 
 ## 4. `impedance-analysis` branch (0.1.6G) — summary
 
@@ -1318,7 +1346,7 @@ Quick wins:
   ours was a board still streaming the rest of its sweep. The cure is `_drain_serial()`, the `'Q'`
   command and `_board_busy()`; see §3, "Asking the board a question while it may still be talking".
 - ~~**Firmware updater .hex is two versions behind**~~ — done on 2026-09-01. `firmware_update/`
-  now carries both `0.1.5c` images and `_firmware_image()` chooses between them from the version the
+  now carries both `0.1.5d` images (`0.1.5c` until 2026-10-02) and `_firmware_image()` chooses between them from the version the
   board just reported, so the loader opens with the image already in it. What follows is kept
   because the reasoning is the reusable part. The folder used to ship the `0.1.5` image (POT 180)
   while the software expected **`0.1.5c`** (`'S'` and `'Q'`), so anyone who ran the
