@@ -5,6 +5,14 @@ Conventional Commits. Versions are marked by Git tags.
 
 ## [Unreleased] — `main`
 
+### Docs — the sweep-file format: column 3 peaks at resonance (2026-10-02)
+
+`f00d660`: `software/docs/DATA_FORMAT_sweep_data.md` said that column 3 of `<n>.txt` *dips* at resonance. Column 3
+is `90 − |Δφ|` and `|Δφ|` falls towards 0° there, so it **peaks**. Measured on the 15 sweeps of 2026-09-11 (board
+1920, air, water, isopropanol, n = 1…9): wings 3–33, maximum 89–97 in air, 49–90 in water, 45–87 in isopropanol;
+in a liquid the maximum lies 0.1–2.8 kHz above column 2's. Found while describing the raw data for an external
+analysis.
+
 ### Removed — `research/notes/` (2026-10-01)
 
 `4009d36`: `v_0_1_6_py_notes.py` and `program_flow_diagram.png`, notes on the `parser6` / `queue6` path of v0.1.6 as
