@@ -148,3 +148,13 @@ v_mag        = 0.9 + mag_ch * 0.030 - 0.610692        # volts, attenuator undone
 _Note: on the TEC-less TEST board the content of these files is identical (the
 DDS/ADC sweep engine is unchanged); only the temperature field in the CSV logs is
 simulated — the `sweep_data` spectra are unaffected._
+
+## ⚠️ Files acquired with firmware 0.1.5c or earlier: each point carries 1/500 of the previous one
+Every sweep point is the mean of 500 ADC readings per channel, computed by the firmware. Up to
+`0.1.5c` (and the `-TEST` variants) the two sums were never reset between points, so each printed
+value is `v_i = m_i + v_(i−1)/500`: on a slowly varying signal the counts of **both channels are
+0.2 % high**, and the first point of a sweep also carries 1/500 of the last point of the sweep before.
+Fixed in firmware `0.1.5d` (2026-10-02). Every column of these files is an affine function of the
+counts, so the bias can be undone offline on the counts recovered from them,
+`m_i = v_i − v_(i−1)/500` (the first point only up to 1/500 of the previous sweep). See `HANDOFF.md`
+§3, "Firmware 0.1.5d".
