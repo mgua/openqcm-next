@@ -40,7 +40,9 @@ class Constants:
     
     # VER 0.1.5 Firmware version compatible with the current application
     # check for more information the arduino source code attached
-    FW_VERSION = '0.1.5c'
+    # VER 0.1.5d (2026-10-02) the sweep-average sums are reset at every point;
+    # 0.1.5c and earlier carried 1/500 of the previous point (+0.2 %).
+    FW_VERSION = '0.1.5d'
 
     # VER 0.1.5c the board sweeps once per command and reads serial only at the
     # top of its loop, so a sweep runs to completion whatever the host does.
