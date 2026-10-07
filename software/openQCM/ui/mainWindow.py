@@ -27,6 +27,8 @@ from openQCM.core.constants import Constants, SourceType, ElapsedTimeAxis, NonSc
 from openQCM.ui.popUp import PopUp
 from openQCM.ui import theme
 from openQCM.ui.plotMenu import PlotMenu
+from openQCM.ui.sequenceDialog import SequenceDialog
+from openQCM.core.sequence import OperationType
 from openQCM.ui.widgets import (_Chevroned, ChevronComboBox,
                                 ChevronSpinBox, ChevronDoubleSpinBox)
 from openQCM.common.logger import Logger as Log
@@ -162,6 +164,15 @@ class MainWindow(QtGui.QMainWindow):
 
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+
+        # Measurement sequence scheduler.  The dialog delegates actual acquisition
+        # to this MainWindow so the existing Worker/serial lifecycle remains the
+        # single source of truth.
+        self._sequence_dialog = None
+        self._sequence_action = QtGui.QAction("Measurement Sequence", self)
+        self.ui.menuTools.addAction(self._sequence_action)
+        self._sequence_action.triggered.connect(self.open_sequence_dialog)
+        self._sequence_action.setEnabled(False)
         
         # VER 0.1.6 start time 
         self.start_time = None
@@ -1541,6 +1552,101 @@ class MainWindow(QtGui.QMainWindow):
     # Overrides the QTCloseEvent,is connected to the close button of the window
     ###########################################################################
     # VER 0.1.6 added a confirmation dialog when closing the application
+    # =======================================================================
+    # MEASUREMENT SEQUENCE
+    # =======================================================================
+
+    def open_sequence_dialog(self):
+        """Open the sequence editor/executor."""
+        if self._sequence_dialog is None:
+            self._sequence_dialog = SequenceDialog(self, self)
+            self._sequence_dialog.finished.connect(self._sequence_dialog_closed)
+        self._sequence_dialog.show()
+        self._sequence_dialog.raise_()
+        self._sequence_dialog.activateWindow()
+
+    def _sequence_dialog_closed(self, *args):
+        self._sequence_dialog = None
+
+    # Adapter API used by SequenceRunner ---------------------------------
+
+    def start_single(self, overtone, temperature_c):
+        """Configure Single Measurement and start the existing Worker."""
+        # Sequence operations are allowed only while the normal GUI is idle.
+        if self.worker.is_running():
+            self.stop()
+
+        self.ui.cBox_Source.setCurrentIndex(SourceType.serial.value)
+
+        # cBox_Speed is ordered highest overtone first.  The quick-select
+        # buttons already implement the same mapping, so use them rather than
+        # duplicating frequency values.
+        count = self.ui.cBox_Speed.count()
+        idx = count - 1 - int(overtone)
+        if 0 <= idx < count:
+            self.ui.cBox_Speed.setCurrentIndex(idx)
+        self._sync_overtone_buttons_from_speed()
+
+        self._sequence_set_temperature(temperature_c)
+        self.start()
+
+    def start_multiscan(self, overtones, temperature_c):
+        """Configure Multiscan and start the existing Worker.
+
+        NOTE: current MultiscanProcess acquires the complete overtone cycle.
+        The selected overtones are therefore applied to the application's
+        scan_selector/curve visibility, matching the existing GUI semantics.
+        """
+        if self.worker.is_running():
+            self.stop()
+
+        self.ui.cBox_Source.setCurrentIndex(SourceType.multiscan.value)
+
+        wanted = set(int(x) for x in overtones)
+        radios = [
+            self.ui.radioBtn_F0, self.ui.radioBtn_F3, self.ui.radioBtn_F5,
+            self.ui.radioBtn_F7, self.ui.radioBtn_F9
+        ]
+        for index, radio in enumerate(radios):
+            radio.setChecked(index in wanted)
+        self._update_scan_selector()
+        self._sync_overtone_buttons_from_radios()
+
+        self._sequence_set_temperature(temperature_c)
+        self.start()
+
+    def stop_acquisition(self):
+        """Stop a running acquisition; safe to call while already idle."""
+        try:
+            if self.worker.is_running():
+                self.stop()
+        except Exception as exc:
+            print(TAG, "Sequence stop error: {}".format(exc))
+
+    def temperature_reached(self, target_c, tolerance=0.2):
+        """Return True when the latest displayed temperature is within tolerance."""
+        if target_c is None:
+            return True
+        try:
+            current = float(self.ui.indicator_temperature.text())
+            return abs(current - float(target_c)) <= float(tolerance)
+        except (TypeError, ValueError):
+            return False
+
+    def _sequence_set_temperature(self, temperature_c):
+        """Set target temperature and ensure TEC control is enabled.
+
+        _get_temperature() writes the target to the configuration consumed by
+        the acquisition process.  X1 (TEC ON) must be sent before start because
+        _serial_write deliberately rejects writes while Worker owns the port.
+        """
+        if temperature_c is None:
+            return
+        self.ui.doubleSpinBox_Temperature.setValue(float(temperature_c))
+        if not getattr(self, "_tec_on", False):
+            self.Temperature_Control_ON()
+        self.temperatureSet()
+
     def closeEvent(self, evnt):
         """
         Overrides the QTCloseEvent, is connected to the close button of the window
@@ -1559,6 +1665,14 @@ class MainWindow(QtGui.QMainWindow):
         
         if res:
             # If user confirms, handle closing process as before
+            if self._sequence_dialog is not None:
+                try:
+                    self._sequence_dialog.cancel_sequence()
+                    self._sequence_dialog.close()
+                except Exception:
+                    pass
+                self._sequence_dialog = None
+
             if self.worker.is_running():
                 print(TAG, 'Window closed without stopping the capture, application will stop...')
                 Log.i(TAG, "Window closed without stopping the capture, application will stop...")
@@ -2591,6 +2705,7 @@ class MainWindow(QtGui.QMainWindow):
             self.ui.pButton_Start.setEnabled(True)
             self.ui.pButton_Tswitch_ON.setEnabled(True)
             self._enable_device_queries()
+            self._sequence_action.setEnabled(True)
             self.ui.label_COM_status.setText("Connected: {}".format(port))
             self.ui.label_COM_status.setToolTip("Connected: {}".format(port))
             self._set_status("standby", "Standby")
@@ -2644,10 +2759,12 @@ class MainWindow(QtGui.QMainWindow):
         self.ui.pButton_Start.setEnabled(False)
         self.ui.pButton_Tswitch_ON.setEnabled(False)
         self._enable_device_queries()
+        self._sequence_action.setEnabled(False)
         self.ui.label_COM_status.setText("Disconnected")
         self._show_board_serial(None)
         self._set_status("disconnected", "Standby")
         self._set_message(message)
+        
         print(TAG, "Disconnected from serial port ({})".format(message))
         Log.i(TAG, "Disconnected from serial port ({})".format(message))
 
@@ -3398,7 +3515,7 @@ class MainWindow(QtGui.QMainWindow):
                # `_k >= environment`, so the oldest timestamp belongs to a
                # sample that is never drawn, and the first point that IS drawn
                # landed at `environment x sweep_period` on the axis: measured at
-               # 4-6 s with environment = 3, and 15-20 s with 10.
+               # 4-6 s with environment = 3, and 15-20 s at the production 10.
                #
                # ⚠️ nanmin was a deliberate choice, recorded in HANDOFF S3, on
                # the reading that zero means "acquisition started". It is
