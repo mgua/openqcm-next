@@ -5,6 +5,72 @@ Conventional Commits. Versions are marked by Git tags.
 
 ## [Unreleased] — `main`
 
+### Fixed — firmware 0.1.5d: the sweep-average sums are reset at every frequency point (2026-10-02)
+
+`712d3af`, `5a98912`. In `0.1.5a`, `0.1.5b` and `0.1.5c` (and the `-TEST` variants) `value` and `value2`, the
+sums of the 500 ADC readings of each frequency point, were globals set to 0 at power-up and never reset: after
+the division they held the mean just printed, so every point carried 1/500 of the previous one
+(`v_i = m_i + v_(i−1)/500`, **+0.2 %** on a slowly varying signal, both channels; the first point of a sweep
+carried the last of the previous sweep). Found by Marco.
+- `firmware/openQCM_Next_py_0.1.5d_teensy/` and `..._0.1.5d_TEST_teensy/`, copied from 0.1.5c: both sums set to
+  0 before each point's readings, a HISTORY entry in the sketch header, `FW_VERSION` `0.1.5d` / `0.1.5d-TEST`.
+  Same averaging, same wire format, same commands. Built with `teensy:avr 1.58.1` (FLASH code 55 120 B and
+  45 564 B; the 0.1.5d `loop()` has the two extra stores, the image differs from 0.1.5c's). 0.1.5c stays in
+  the tree as the previous step.
+- Host: `Constants.FW_VERSION` → `0.1.5d`; `firmware_update/` ships the two 0.1.5d images in place of 0.1.5c,
+  and `_firmware_image()` finds them by name. A board on 0.1.5c is offered the update.
+- Downstream, from the conversion formulas on the range of the 2026-09-11 sweeps (not measured): the phase
+  reading 0.18–0.37° low, V_MAG 0.8–2.8 mV high, the divider magnitude M 0.3–1.1 % low — small for the
+  amplitude method, not negligible for the exact inversion of the impedance branch. **Every dataset acquired
+  before 0.1.5d carries it**; within a sweep it can be undone offline, `m_i = v_i − v_(i−1)/500`. HANDOFF §3
+  "Firmware 0.1.5d", README, SESSION_PROMPT, and (`3def0af`) a warning at the end of
+  `software/docs/DATA_FORMAT_sweep_data.md` for anyone reading archived sweep files.
+
+### Docs — the sweep-file format: column 3 peaks at resonance (2026-10-02)
+
+`f00d660`: `software/docs/DATA_FORMAT_sweep_data.md` said that column 3 of `<n>.txt` *dips* at resonance. Column 3
+is `90 − |Δφ|` and `|Δφ|` falls towards 0° there, so it **peaks**. Measured on the 15 sweeps of 2026-09-11 (board
+1920, air, water, isopropanol, n = 1…9): wings 3–33, maximum 89–97 in air, 49–90 in water, 45–87 in isopropanol;
+in a liquid the maximum lies 0.1–2.8 kHz above column 2's. Found while describing the raw data for an external
+analysis.
+
+### Removed — `research/notes/` (2026-10-01)
+
+`4009d36`: `v_0_1_6_py_notes.py` and `program_flow_diagram.png`, notes on the `parser6` / `queue6` path of v0.1.6 as
+imported in July (eleven queues in `ParserProcess`, five fields from `get_ser_error()`). The code has moved on,
+nothing referenced them; Marco asked for them to go, on both branches. The README's Repository Structure follows.
+
+### Docs — the impedance branch's measurements of record, as seen from `main` (2026-10-01)
+
+`e90bff9`: HANDOFF §4 (the summary of `impedance-analysis`) records that the branch's HANDOFF and `ALGORITHM.md` now
+cite the tables re-derived on the nine dumps of 2026-09-11 (`research/air-ipa-water-1920-2026-09-11/handoff-tables.md`
+on the branch) instead of the July 2026 offline campaign, whose raw data were never kept. `docs/SESSION_PROMPT.md`:
+the no-fold branch of the phase unfold was exercised on 2026-09-11, and the item on the provenance of the July
+datasets is closed.
+
+### Changed — `Constants.environment` = 8, the production value (2026-10-01)
+
+`3b78344`: the averaging buffer and the warm-up go from the development value 3 (since 2026-07-29) to **8**,
+the production value fixed by Marco — not 10, as the documents had said until now. If the warm-up proves too
+long in practice it may be lowered again; the cost is purely metrological, since `core/averaging.py` keeps the
+outlier rejection at every buffer size. The banner on the constant says so.
+
+### Docs — stale statements corrected across HANDOFF, README, SESSION_PROMPT and CLEANUP_PLAN (2026-10-01)
+
+`e6e2610`: HANDOFF §4 (the impedance branch) rewritten as a summary of the branch as it is — the exact formula
+is implemented and published, `argmax` is the standard estimator, the phase-shifted Lorentzian an experimental
+opt-in — and points at cherry-pick, never `git merge main`. The README's Repository Structure is rebuilt from the
+tracked files (gone: `mainWindow_new_ui.py`, `data_view/`), its roadmap drops the PID window (it exists) and the
+exact formula (implemented on the branch). HANDOFF also loses an obsolete `_build_shell()` revert recipe, a
+firmware-updater bullet that contradicted itself, a stale `worker.py` line reference, deferred UI items that were
+done, and two garbled warning signs. CLEANUP_PLAN marked as executed in part. Dates aligned to 2026-10-01.
+
+### Docs — component datasheets in the repo (2026-10-01)
+
+`a9aa77f`: `docs/datasheet/` brought from `impedance-analysis` as it stands there — AD8302 rev. B, AD9851 (the
+DDS), AD5251/AD5252 (the digital potentiometer), MTD415T, Teensy 4.0 cards. Files only, checked out from the branch
+(no cherry-pick: the branch commits also touch its README). The README's Repository Structure lists the folder.
+
 ### Fixed — one datalog row per cycle: the duplicate and missing rows of the multiscan datalog (2026-09-17)
 
 `2da0705`, and the follow-up on the values. The multiscan datalog had duplicate rows and gaps by construction: the row was written from the
@@ -12,8 +78,8 @@ handler of the **temperature** queue (five messages per cycle, one per overtone)
 of the **status** queue read 0 — a different queue, consumed *after* the temperature queue in the drain. Every
 temperature message pending in one GUI tick was therefore judged against a stale value: 0, 1 or up to 5
 identical rows per cycle. Measured on the 2026-09-11 datalog of the impedance branch, where the code is the
-same: 96 duplicate rows in 486, identical `Relative_time` to the millisecond (the time step before a duplicate
-is 0.00 s), and 19 s gaps at the 95th percentile where a cycle wrote nothing. Now the temperature message is
+same: 95 duplicate rows in 486, each within 0.021 s of the row before it on `Relative_time` (corrected 2026-10-01:
+this entry said 96, identical to the millisecond), and 19 s gaps at the 95th percentile where a cycle wrote nothing. Now the temperature message is
 the datalog clock: `Multiscan.elaborate_multi` posts it **after** that overtone's F and D with two more fields,
 the overtone index and an end-of-cycle flag (`overtone == len(frequencies_file) − 1`); the worker drains F and D
 before the temperature queue and writes a row when, and only when, the flag is set — the time-controlled

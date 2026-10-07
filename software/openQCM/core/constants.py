@@ -40,7 +40,9 @@ class Constants:
     
     # VER 0.1.5 Firmware version compatible with the current application
     # check for more information the arduino source code attached
-    FW_VERSION = '0.1.5c'
+    # VER 0.1.5d (2026-10-02) the sweep-average sums are reset at every point;
+    # 0.1.5c and earlier carried 1/500 of the previous point (+0.2 %).
+    FW_VERSION = '0.1.5d'
 
     # VER 0.1.5c the board sweeps once per command and reads serial only at the
     # top of its loop, so a sweep runs to completion whatever the host does.
@@ -204,11 +206,14 @@ class Constants:
 # =============================================================================
 
     # ##################################################################### #
-    # DEV ONLY -- RESTORE environment = 10 BEFORE ANY PRODUCTION BUILD.     #
+    # PRODUCTION VALUE: environment = 8 (Marco, 2026-10-01).                #
     # ##################################################################### #
-    # Shortened so a test run leaves warm-up almost immediately. The reason to
-    # restore it is now purely metrological -- how many sweeps get averaged into
-    # each logged point, and how long the instrument takes to settle.
+    # The length of the averaging ring buffer and of the warm-up: how many
+    # sweeps go into each logged point, and how many cycles pass before the
+    # first one is logged. Lowered to 3 during development (2026-07-29) so a
+    # test run left warm-up almost immediately; set to 8 on 2026-10-01. If the
+    # warm-up proves too long in practice it may be lowered again -- the cost
+    # is purely metrological.
     #
     # It used to be more than that: with scipy's trim_mean, which cuts
     # int(proportiontocut * N) samples per tail, any N below ten cut nothing and
@@ -217,7 +222,7 @@ class Constants:
     # tail at every buffer size -- so shortening the buffer no longer costs
     # robustness. Measured on the replay with one 40 Hz bad sweep: at N=3 the old
     # average was 12 Hz off, the new one lands on the median.
-    environment = 3
+    environment = 8
     
     # VER 0.1.6 reduce the real-time chart history length to 8192 samples 
     ring_buffer_samples = 8192 # 16384

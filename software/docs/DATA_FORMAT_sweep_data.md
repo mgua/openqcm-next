@@ -95,8 +95,17 @@ the 0.3564 dB residue is not cosmetic — it understates the divider magnitude b
 **4.02 %**, which an impedance inversion amplifies to **up to −22 %** on the
 motional resistance at the fundamental in air.
 
-A reader who only wants to *look* at the sweep does not need any of this: column 2
-already rises at resonance and column 3 already dips there.
+A reader who only wants to *look* at the sweep does not need any of this: at resonance
+**both columns have a maximum**. Column 2 rises because the divider passes more
+signal; column 3 rises because `|Δφ|` falls towards 0° there, and column 3 is
+`90 − |Δφ|`. Measured on the 15 fundamental-to-9th sweeps of 2026-09-11 (board 1920):
+column 3 sits at 3–33 on the wings and peaks at 89–97 in air, 49–90 in water, 45–87 in
+isopropanol — above 90 where the channel offset pushes the reading past zero phase. In
+a liquid its maximum lies 0.1–2.8 kHz above the maximum of column 2, so the two peaks
+are not the same frequency.
+
+⚠️ Until 2026-10-02 this paragraph said that column 3 *dips* at resonance. It does not:
+it peaks.
 
 ## Real example (first line of `1.txt`)
 ```
@@ -139,3 +148,13 @@ v_mag        = 0.9 + mag_ch * 0.030 - 0.610692        # volts, attenuator undone
 _Note: on the TEC-less TEST board the content of these files is identical (the
 DDS/ADC sweep engine is unchanged); only the temperature field in the CSV logs is
 simulated — the `sweep_data` spectra are unaffected._
+
+## ⚠️ Files acquired with firmware 0.1.5c or earlier: each point carries 1/500 of the previous one
+Every sweep point is the mean of 500 ADC readings per channel, computed by the firmware. Up to
+`0.1.5c` (and the `-TEST` variants) the two sums were never reset between points, so each printed
+value is `v_i = m_i + v_(i−1)/500`: on a slowly varying signal the counts of **both channels are
+0.2 % high**, and the first point of a sweep also carries 1/500 of the last point of the sweep before.
+Fixed in firmware `0.1.5d` (2026-10-02). Every column of these files is an affine function of the
+counts, so the bias can be undone offline on the counts recovered from them,
+`m_i = v_i − v_(i−1)/500` (the first point only up to 1/500 of the previous sweep). See `HANDOFF.md`
+§3, "Firmware 0.1.5d".

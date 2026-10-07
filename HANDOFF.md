@@ -2,7 +2,7 @@
 
 > Technical starting point to continue development of the software and of the
 > `impedance-analysis` branch. Working language: Italian in chat, English in the repo.
-> Last updated: 2026-09-01.
+> Last updated: 2026-10-02.
 >
 > Starting a new session: paste [`docs/SESSION_PROMPT.md`](docs/SESSION_PROMPT.md)
 > as the first message. It is a shortcut into this file, not a replacement for it.
@@ -24,7 +24,7 @@ Package `software/openQCM/`:
   **`averaging.py`** (robust averaging of the ring buffers — see below)
 - `processors/`: `Serial.py` (SerialProcess), `Multiscan.py` (multi-overtone; conductance on the impedance branch), `Calibration.py` (peak detection), `Parser.py`
 - `ui/`: `mainWindow.py` (controller, ~4000 lines), `mainWindow_ui.py` (**programmatic UI builder**,
-  GUI redesign R1; the old generated `mainWindow_new_ui.py` stays as reference only), `theme.py`,
+  GUI redesign R1; the old generated `mainWindow_new_ui.py` was deleted in `d23333e`), `theme.py`,
   `popUp.py`, **`rawDataView.py`** (live Raw Data View), **`peakDataView.py`** (last Peak
   Detection), **`dataLogView.py`** (File > Open Log), **`plotMenu.py`** (the one plot right-click
   menu), **`widgets.py`** (combo/spin boxes that paint their own chevron)
@@ -442,7 +442,7 @@ put `Jul` before `Jun` in a directory listing and put a **space inside the file 
 per overtone. Until 2026-09-17 the multiscan row was gated on `self._overtone_number == 0`, a value that
 arrives on the **status** queue and was consumed **after** the temperature queue: inside one drain every
 pending temperature message saw the same stale number, so a cycle produced 0, 1 or 5 identical rows depending
-on how the GUI timer fell against the process (96 duplicate rows in 486 on 2026-09-11, 19 s gaps). Rules now:
+on how the GUI timer fell against the process (95 duplicate rows in 486 on 2026-09-11, 19 s gaps). Rules now:
 
 - the temperature message of an overtone is `[time, T, overtone, is_last_of_cycle, F[], D[]]` (the last two
   copies of the cycle's values, which the row is written from) and is posted **after**
@@ -524,7 +524,7 @@ under everything below.
 because no trimmed mean exists before the circular buffer has filled. The reference used to be
 `np.nanmin(t1_buffer)` — the oldest timestamp present, which belongs to sweep 0, a sample that is
 never drawn. So the first point that *is* drawn landed at `environment × sweep_period`: **measured
-5.4 s** with `environment = 3` and a 1.8 s sweep, and 15–20 s at the production value of 10. The
+5.4 s** with `environment = 3` and a 1.8 s sweep, and 15–20 s with 10. The
 operator sees a run that starts several seconds late.
 
 `_first_valid_timestamp()` takes the last element of the leading run of non-NaN **values** — the
@@ -753,10 +753,11 @@ conductance plots — a copy of an *older* blue palette that has never tracked t
 
 Raw Data View and `plot_sweep_spline` draw amplitude sweeps; blue is correct there.
 
-### ⚠️ `Constants.environment` is currently a development value
+### `Constants.environment` — production value 8 (2026-10-01)
 
-It is **3**, not the production **10**, so test runs leave warm-up almost immediately.
-**Restore 10 before any production build.** The reason is now **purely metrological** — how many
+It is **8**, the production value fixed by Marco on 2026-10-01, on **both** branches. It was **3**
+during development (from 2026-07-29), so test runs left warm-up almost immediately. If the warm-up
+proves too long in practice it may be lowered again. The cost is **purely metrological** — how many
 sweeps go into each logged point, and how long the instrument takes to settle. It used to be more
 than that (shortening the buffer switched off the outlier rejection); `core/averaging.py` removed
 that dependency, so do not repeat the old warning. The constant carries a banner explaining both.
@@ -777,7 +778,8 @@ Since 2026-08-28, each with a section of its own above: **datalog file names on 
 (`2026-08-31_12-27-50_multi.csv`); **the Q-1 elapsed-time axis** on the four real-time plots;
 **the menu bar homologous with Q-1 v3.0**; **the machine identification number** end to end —
 programmer sketch, firmware `'S'`, host query, sidebar and window title; **firmware `0.1.5c` with
-`'Q'`** and the host waiting for the board to fall silent before it asks anything. All see
+`'Q'`** and the host waiting for the board to fall silent before it asks anything; **firmware
+`0.1.5d`** (2026-10-02), whose sweep average no longer carries the previous point. All see
 CHANGELOG.
 
 ### Asking the board a question while it may still be talking
@@ -912,12 +914,14 @@ leading zeros on the series.
 worktrees' sketch) or with `NO_SERIAL` when the magic byte is absent — it never invents or writes
 one.
 
-The command arrived with `0.1.5b`; the current pair is **`0.1.5c`**, which added `'Q'`. Each
-version is its own pair of folders, production and no-TEC `-TEST`:
+The command arrived with `0.1.5b`; `0.1.5c` added `'Q'`; the current pair is **`0.1.5d`**, which
+fixed the sweep average (see "Firmware 0.1.5d" below). Each version is its own pair of folders,
+production and no-TEC `-TEST`:
 
 | folder | state |
 |---|---|
-| `openQCM_Next_py_0.1.5c_teensy` + `_TEST_` | ⭐ **current** — `'S'` and `'Q'`, what `Constants.FW_VERSION` expects |
+| `openQCM_Next_py_0.1.5d_teensy` + `_TEST_` | ⭐ **current** — `'S'`, `'Q'` and the reset sweep sums, what `Constants.FW_VERSION` expects |
+| `openQCM_Next_py_0.1.5c_teensy` + `_TEST_` | superseded — its average carries 1/500 of the previous point. Delete once no board runs it |
 | `openQCM_Next_py_0.1.5b_teensy` + `_TEST_` | superseded — `'S'` only. Delete once no board runs it |
 | `openQCM_Next_py_0.1.5a_teensy` + `_TEST_` | superseded — neither. Delete once no board runs it |
 
@@ -972,7 +976,7 @@ other.
 
 ⚠️ **`Constants.FW_VERSION` moves with the firmware.** The host compares the reply to `'F'` against
 that string and pops a firmware-update warning when it does not match, so a version bump that stops
-at the sketch turns into a warning on every connect. It is `'0.1.5c'` now.
+at the sketch turns into a warning on every connect. It is `'0.1.5d'` now (since 2026-10-02).
 
 #### Bench verification — complete, 2026-09-01
 
@@ -1009,7 +1013,7 @@ wrong answer and no answer at all looked identical from outside — they log the
 The comparison is `_firmware_is_current()`, **one function** — the check appears four times in
 `get_firmware_version` and a rule spelled out four times is a rule that drifts. It accepts
 `FW_VERSION` and, while `Constants.accept_test_firmware` is on, `FW_VERSION + '-TEST'`: the
-prototype board answers `0.1.5c-TEST` and used to raise the update warning on every connect, though
+prototype board answers `0.1.5d-TEST` (until 2026-10-02 `0.1.5c-TEST`) and used to raise the update warning on every connect, though
 it speaks the whole protocol. The suffix says which board is on the bench, not that the firmware is
 older.
 
@@ -1022,8 +1026,33 @@ rejects `-TEST` and everything else that is not an exact match.
 but prints the obsolete dashed form. The specification calls for v2.1 there. Until that is updated
 the two sketches agree on the EEPROM and disagree on what they print.
 
+### Firmware 0.1.5d — each point's average no longer carries the previous point (2026-10-02)
+
+In `0.1.5a`, `0.1.5b` and `0.1.5c` (and their `-TEST` variants) the two sums of the sweep average,
+`value` and `value2` — 500 ADC readings per frequency point, magnitude and phase channel — were
+globals set to 0 at power-up and **never reset**. After the division they held the mean just
+printed, so each point's sum started from it: printed `v_i = m_i + v_(i−1)/500`. On a slowly varying
+signal that is `m·500/499`, **+0.2 % on the counts of both channels**; the first point of every sweep
+also carried 1/500 of the last point of the sweep before, i.e. of another overtone. `0.1.5d` sets
+both sums to 0 before each point's readings; nothing else changes (averaging, wire format,
+commands). Found by Marco, 2026-10-02.
+
+What +0.2 % of the counts means downstream — from the host's conversion formulas
+(`_Vmag_bit_mag`, `_Vphase_bit_phase`) applied to the range of the 2026-09-11 sweeps, **not
+measured**: V_PHS is proportional to the counts, so the phase reading `(1.8 − V_PHS)/0.01` comes out
+0.18–0.37° low; `V_MAG + 0.61069 V` is proportional to the counts, so V_MAG reads 0.8–2.8 mV high and
+the divider magnitude `M = R17·10^((V_CP − V_MAG)/0.6)` 0.3–1.1 % low. The amplitude method of `main`
+should barely see it — a near-uniform scale factor moves neither a peak nor a −0.3 dB width; not
+verified — while the exact inversion of the impedance branch does, because near resonance `R_q = M·cos φ − R17` is a
+difference of close numbers.
+
+⚠️ **Every dataset acquired before 0.1.5d carries it** — all the campaigns in `research/` included.
+Within one sweep the recursion is exact and can be undone offline: `m_i = v_i − v_(i−1)/500`, on the
+counts or on V_PHS and `V_MAG + 0.61069 V`, which are proportional to them (the first point only up to
+1/500 of the previous sweep's last point; the firmware prints two decimals).
+
 ### ⚠️ TEST-ONLY firmware variant (no-TEC board) — temporary, will be removed
-`firmware/openQCM_Next_py_0.1.5c_TEST_teensy/` (`0.1.5c-TEST`) is a **throwaway internal
+`firmware/openQCM_Next_py_0.1.5d_TEST_teensy/` (`0.1.5d-TEST`) is a **throwaway internal
 variant** for a special bench board that **does not mount the TEC section**. It is a copy of the
 production firmware of the same version with all MTD415T/Serial1, MCP9808, fan and TEC-pin code removed (on a
 no-TEC board those blocking Serial1 reads stall the sweep), and the temperature field **simulated**
@@ -1033,43 +1062,49 @@ Teensy 4.0 die temperature). The DDS/ADC sweep engine and the host wire format a
 accepted as no-ops. **Do not build features on this variant.** It exists for a prototype board and
 will be deleted once that board is retired — but it is **kept in step with production while that
 board is in use**: a change to the host/firmware protocol goes into both sketches, as the `'S'`
-`'S'` and `'Q'` commands did on 2026-08-31. Production firmware is
-`firmware/openQCM_Next_py_0.1.5c_teensy/`.
+and `'Q'` commands did on 2026-08-31 and the reset sweep sums on 2026-10-02. Production firmware is
+`firmware/openQCM_Next_py_0.1.5d_teensy/`.
 
-## 4. `impedance-analysis` branch (0.1.6G) — detail
+## 4. `impedance-analysis` branch (0.1.6G) — summary
+
+The full, current description lives in `HANDOFF.md` **on the branch** (§4 and the research pages);
+this is only an orientation, updated 2026-10-01.
 
 **What it is**: impedance measurement via the **conductance spectrum G(f)** derived from the AD8302
 MAG/PHASE signals (software post-processing; same firmware/protocol as the classic method).
 
-**Where in the code (on the branch)**:
-- `software/openQCM/processors/Multiscan.py`: `parameters_finder_impedance()` (~:328), `_Zabs_Vmag`,
-  `_phase_raw_V_phase`, `_G_calc`, `_B_calc`, `_Freq_G`, `_half_bandwidth_G`. Wired into
-  `elaborate_multi()` (~:626): it runs **both** the classic and the conductance method but
-  **publishes the conductance** results (the classic lines are commented out).
-- `software/openQCM/sweep_data/plot_conductance.py`: offline validation script (uses `g*.txt`).
-- `docs/impedance-analysis/`: documentation (`conductance-calculation.md`,
-  `openQCM_Next_G_Impedance_Analysis.md`, 3 PDFs).
+**State**:
+- The **exact** complex-divider inversion is **implemented** and is what the branch publishes
+  (`Multiscan.py`: `_RX_exact`, `_G_exact`, `_B_exact`, `parameters_finder_impedance_exact()`); the
+  approximate `G = cosφ/|Z|` path (`parameters_finder_impedance()`) is no longer called.
+- **Standard estimator**: `argmax` of G for the resonance frequency, D = 2Γ/f from the half-height
+  half-width (`Constants.IMPEDANCE_ESTIMATOR = "argmax"`). **Experimental opt-in** (2026-09-16): the
+  phase-shifted Lorentzian fitted to G (`core/lorentzian.py`), chosen per run in Measurement Setup
+  before START, with its own datalog `<ts>_multi_lorentzian.csv`.
+- Live impedance panel (G, B, admittance locus), **Tools → Conductance Data** and **Impedance Fit
+  (live)**; a unittest suite in `software/tests/` (70 tests); a standard run prints no per-overtone
+  line on the console (2026-10-01).
+- Liquid campaigns (air, water, isopropanol; board 1920, 2026-09-10 and 2026-09-11) in `research/`
+  on the branch. They are the measurements of record: since 2026-10-01 the branch's HANDOFF §4 and
+  `ALGORITHM.md` cite the tables re-derived on the nine dumps of 2026-09-11
+  (`research/air-ipa-water-1920-2026-09-11/handoff-tables.md`, one script per table) — δ from the
+  fold against the roundness fit, FIT 1 against FIT 2, the −28 dB mask, the divider's dynamic range,
+  the liquid baseline, the board phase φ_b. The July 2026 offline campaign, whose raw data were
+  never kept, is no longer cited.
 
-**State / limitations**:
-- Implements the **approximate** formula (`G = cosφ/|Z|`); the **exact** complex-impedance version is
-  documented only, not implemented.
-- **DEBUG** state (`constants.py`: `environment = 4`, `plot_autoscale_yaxis = True`).
-- The method is **always on, not selectable** from the UI (hard-wired in `elaborate_multi`). The only
-  added control is the **"G DATA VIEW (BETA)"** button (launches the offline plot).
-- `elaborate_conductance_multi()` is **dead code** (UNUSED).
-
-**To stabilize / merge**:
-1. Make the measurement **selectable** (classic vs conductance) instead of hard-wired.
-2. Implement the **exact** formula (complex impedance in the divider).
-3. Remove the DEBUG state.
-4. **Align with `main`** via `git merge main` (the branch lacks the recent development).
+**Before a merge into `main`** (Marco's decision): the bench run T7 of
+`docs/impedance-analysis/PLAN_psl_live_estimator.md`, the validation block B (second sensor, second
+board, third liquid), the classic-vs-conductance selector, and the production switches
+(`accept_test_firmware`, `plot_reassert_yrange_freq_diss`, `DATALOG_AMPLITUDE_TOO`).
+Moving work between the branches: **cherry-pick**, as in §2 — never `git merge main`.
 
 ## 5. Planned technical tasks (on `main`)
 
 
 > 📌 **Source-code cleanup**: a full plan already exists in
 > [`CLEANUP_PLAN.md`](CLEANUP_PLAN.md) — produced by a read-only audit on
-> 2026-07-20 (baseline `main` @ `630e898`), not yet executed. Dead code, unused
+> 2026-07-20 (baseline `main` @ `630e898`), executed only in part since (the dead Qt-Designer
+> UI files in `d23333e`; `data_view/`, replaced by `core/logAnalysis.py`). Dead code, unused
 > structures, redundancies, with a per-item confidence tag and a verification
 > protocol. Read its §0 before touching anything: PyQt5 5.9.2 with the classic
 > `QtGui` namespace must not be "modernised", and Qt reaches methods through
@@ -1117,7 +1152,7 @@ Done (raw-data robustness — see CHANGELOG):
   (per overtone) **and temperature**, in **both** processors (`Multiscan.py` multi-overtone,
   `Serial.py` single-overtone). Added `Constants.trim_mean_proportiontocut`. The replaced
   SG (window=3, order=1) was a linear 3-point moving average with no outlier rejection.
-  - **Still pending — Stage C**: the datalog-decimation average in `core/worker.py:767-769`.
+  - **Still pending — Stage C**: the datalog-decimation average in `core/worker.py:955-957` (still `np.average`).
     There, average over `get_partial()` (NaN-safe) and note that `trim_mean(0.10)` degenerates
     to the plain mean for buffers < 10 samples (choose proportion or estimator accordingly).
 
@@ -1165,7 +1200,8 @@ GUI redesign (phased, inspired by openQCM Q-1 v3.0 — reference repo `/Users/ma
     `dest.addWidget(container)`. Do **NOT** use `layout.addItem(takenItem)` for widgets — it does not
     re-parent, leaving controls owned by the old `centralwidget` → mis-rendered. The central layout is
     swapped with the `QtGui.QWidget().setLayout(oldGrid)` throwaway trick.
-  - **Revert instantly**: comment out the `self._build_shell()` call in `__init__` → old grid returns.
+  - ~~**Revert instantly**: comment out the `self._build_shell()` call~~ — obsolete: `_build_shell()`
+    was deleted in R1 (below), so there is no old grid to return to.
   - **What to fix on-device** (not verifiable headless): the action row packs 6 buttons + progress bar
     horizontally into a ~360px sidebar → likely overflows/wraps and looks cramped. Candidate fixes: lay
     the acquisition controls vertically (or a 2-col grid), give the sidebar groups real "card"
@@ -1285,8 +1321,8 @@ GUI redesign (phased, inspired by openQCM Q-1 v3.0 — reference repo `/Users/ma
     keep Y still while dragging, refit it once to the visible data ~200 ms after the last X change
     (`setAutoVisible(y=True)`, single-shot timer on `sigXRangeChanged`); "Auto-scale" and "Reset
     zoom" in the right-click menu stay. `OPENQCM_PLOT_DEBUG=1` is the yardstick before and after.
-  - **Confirmed UX decisions**: single StartStop toggle; **TEC/PID kept in the sidebar** (advanced
-    window later); System Log as a tab; default theme light; **frequency & dissipation stay TWO
+  - **Confirmed UX decisions**: single StartStop toggle; **TEC/PID kept in the sidebar** (the advanced
+    PID Control window followed on 2026-09-08); System Log as a tab; default theme light; **frequency & dissipation stay TWO
     separate panels** (single dual-axis panel rejected).
   - ⚠️ **Preserve (do NOT copy Q-1 blindly)**: Q-1 v3.0 has *no* temperature control — NEXT's
     **TEC/Peltier + PID** must stay; and NEXT's **multiscan** multi-overtone selection differs from
@@ -1310,7 +1346,7 @@ Quick wins:
   ours was a board still streaming the rest of its sweep. The cure is `_drain_serial()`, the `'Q'`
   command and `_board_busy()`; see §3, "Asking the board a question while it may still be talking".
 - ~~**Firmware updater .hex is two versions behind**~~ — done on 2026-09-01. `firmware_update/`
-  now carries both `0.1.5c` images and `_firmware_image()` chooses between them from the version the
+  now carries both `0.1.5d` images (`0.1.5c` until 2026-10-02) and `_firmware_image()` chooses between them from the version the
   board just reported, so the loader opens with the image already in it. What follows is kept
   because the reasoning is the reusable part. The folder used to ship the `0.1.5` image (POT 180)
   while the software expected **`0.1.5c`** (`'S'` and `'Q'`), so anyone who ran the
@@ -1322,11 +1358,12 @@ Quick wins:
   ⚠️ **Corrected 2026-09-01**: this line used to say the `0.1.5c` image was *already built*. It was
   not — and **no `-TEST` variant had ever been built either**; only `0.1.5a` and `0.1.5b` non-TEST
   carried a `.hex`. Both `0.1.5c` images have now been built (`teensy:avr 1.58.1`, FLASH 55 120 B
-  and 45 500 B) and live beside their sketches. What is still open is the swap inside
-  `firmware_update/`, and the question underneath it: the loader is opened with **no file**, so the
+  and 45 500 B) and live beside their sketches. What was still open at that point was the swap
+  inside `firmware_update/` — done the same day, as the top of this bullet says — and the question
+  underneath it: the loader is opened with **no file**, so the
   operator picks the image by hand out of a folder whose only `.hex` is the wrong version and, on a
   prototype, the wrong variant. The software already knows which it wants — it has just read the
-  reported version, `-TEST` suffix included — and `open -a Teensy.app <hex>` would hand it over.
+  reported version, `-TEST` suffix included — and `open -a Teensy.app <hex>` hands it over, which is what `_firmware_image()` now does.
 
 Backend backlog ported from the more mature **openQCM Q-1** sibling codebase (its CHANGELOG is the
 roadmap). ⚠️ Each Q-1-inspired change needs a **detailed plan + explicit approval before coding**
@@ -1343,15 +1380,20 @@ roadmap). ⚠️ Each Q-1-inspired change needs a **detailed plan + explicit app
 - **Windows serial anti-jitter**: add `sleep(0.001)` inside the `inWaiting()` read loop
   (`Serial.py:826`, currently a tight busy-wait) to reduce Windows scheduler jitter.
 - **Minor / defensive**: `FileManager.create_dir(None)` raises `TypeError`; `file_exists(None)`
-  returns `None`. `Constants.environment = 50` for production (currently `10`, development).
+  returns `None`. (`Constants.environment` is now the production 8, see §3.)
 
-Later (GUI / firmware / packaging — deferred): UI (System Log tab, measurement cursors, light
-theme, overtone quick-select); packaging (`common/resources.py` + hardcoded-icon fix, PyInstaller);
+Later (GUI / firmware / packaging — deferred). Already done in the GUI redesign: the System Log tab,
+the light theme, the overtone quick-select; measurement cursors exist in the Datalog View only.
+Still deferred: packaging (`common/resources.py` + hardcoded-icon fix, PyInstaller);
 cross-platform validation; merge the impedance feature once stable (make the conductance method
 selectable).
 
 ## 6. Conventions and gotchas
 
+- **Hardware references in the repo** (2026-10-01): `docs/datasheet/` — AD8302 rev. B, AD9851, AD5251/AD5252,
+  MTD415T, Teensy 4.0. ⚠️ Read them before stating a component value, a pin or a detector law. The same folder
+  lives on `impedance-analysis`, which is where new datasheets are added first; the schematic
+  (`docs/schematic/`) is on that branch only.
 - **PyQt5 = 5.9.2 is mandatory**: the GUI uses the classic `QtGui` widget namespace
   (`QtGui.QMainWindow`, `QtGui.QPushButton`…); PyQt5 ≥5.11 moves widgets to `QtWidgets` and breaks the
   app.
@@ -1388,12 +1430,12 @@ selectable).
   known to git", and a merge complaining about local modifications to those same files — that is the
   `skip-worktree` bit: diagnose with `git ls-files -v | grep ^S`.
 
-- â ï¸ **Mixed line endings, and no `.gitattributes`.** 42 `.py` files are LF and five are CRLF
+- ⚠️ **Mixed line endings, and no `.gitattributes`.** 42 `.py` files are LF and five are CRLF
   (`fileStorage`, `switcher`, `Sigma_Clip`, `ReadLine`, `Calibration`). Two consequences. **On
   Windows**, set `git config --global core.autocrlf false` *before cloning*, or git rewrites every
   file at checkout and the clone looks entirely modified. **When editing with a script**, read and
   write in binary: `open(p).read()` uses universal newlines and `write()` emits `'\n'`, which
-  silently converts a CRLF file whole â it happened in `8c40c58` and had to be undone in `da81e2b`,
+  silently converts a CRLF file whole — it happened in `8c40c58` and had to be undone in `da81e2b`,
   where a two-line change arrived as a 1598-line diff — and again on 2026-09-17 on `fileStorage.py`, on both
   branches, caught by the 351-line stat before the push and rewritten. Normalising all five is a reasonable
   decision to take deliberately; it has not been taken.
