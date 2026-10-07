@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% block title %}{{ dataset['name'] }} · Data Dashboard{% endblock %}{% block content %}
+<div class="toolbar"><div><h1>{{ dataset['name'] }}</h1><p class="muted">{{ dataset['original_filename'] }} · {{ dataset['rows_count'] }} misure · asse X in minuti</p></div><div class="actions"><a class="btn secondary" href="{{ url_for('dashboard') }}">← Dataset</a>{% if g.user['role']=='admin' %}<form method="post" action="{{ url_for('delete_dataset', dataset_id=dataset['id']) }}" onsubmit="return confirm('Eliminare definitivamente questo dataset?');"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn danger" type="submit">Elimina dataset</button></form>{% endif %}</div></div>
+<div class="grid">
+<div class="card wide"><h2>Temperature</h2><div class="chart-wrap"><canvas id="temperatureChart"></canvas></div></div>
+<div class="card wide"><h2>Resonance Frequency</h2><div class="chart-wrap"><canvas id="frequencyChart"></canvas></div></div>
+<div class="card wide"><h2>Dissipation</h2><div class="chart-wrap"><canvas id="dissipationChart"></canvas></div></div>
+<div class="card wide"><h2>Anteprima dati</h2><div style="overflow:auto"><table><thead><tr><th>Date</th><th>Time</th><th>Relative time</th><th>Temperature</th><th>Resonance Frequency</th><th>Dissipation</th></tr></thead><tbody>{% for r in data[:30] %}<tr><td>{{ r['date'] }}</td><td>{{ r['time'] }}</td><td>{% if r['relative_time'] is not none %}{{ '%.3f'|format(r['relative_time']/60) }} min{% endif %}</td><td>{{ r['temperature'] }}</td><td>{{ r['resonance_frequency'] }}</td><td>{{ r['dissipation'] }}</td></tr>{% endfor %}</tbody></table></div>{% if data|length > 30 %}<p class="muted">Mostrate le prime 30 righe.</p>{% endif %}</div>
+</div>
+<script>
+const rows = {{ data|tojson }};
+function makeChart(id, label, field, yTitle){const points=rows.map(r=>({x:r.relative_time==null?null:r.relative_time/60,y:r[field]})).filter(p=>p.x!==null&&p.y!==null);new Chart(document.getElementById(id),{type:'line',data:{datasets:[{label,data:points,borderWidth:2,pointRadius:0,tension:.15,fill:false}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'nearest',intersect:false},plugins:{legend:{display:false}},scales:{x:{type:'linear',title:{display:true,text:'Tempo relativo (min)'}},y:{title:{display:true,text:yTitle}}}}});}
+makeChart('temperatureChart','Temperature','temperature','Temperature');
+makeChart('frequencyChart','Resonance Frequency','resonance_frequency','Hz');
+makeChart('dissipationChart','Dissipation','dissipation','Dissipation');
+</script>
+{% endblock %}

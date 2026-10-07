@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% block title %}Confronto · Data Dashboard{% endblock %}{% block content %}
+<div class="toolbar"><div><h1>Confronto importazioni</h1><p class="muted">Confronto di {{ datasets|length }} importazione{% if datasets|length != 1 %}i{% endif %}. L'asse X mostra il tempo relativo in minuti.</p></div><a class="btn secondary" href="{{ url_for('dashboard') }}">← Dataset</a></div>
+<div class="grid">
+<div class="card wide"><h2>Temperature</h2><div class="chart-wrap"><canvas id="temperatureChart"></canvas></div></div>
+<div class="card wide"><h2>Resonance Frequency</h2><div class="chart-wrap"><canvas id="frequencyChart"></canvas></div></div>
+<div class="card wide"><h2>Dissipation</h2><div class="chart-wrap"><canvas id="dissipationChart"></canvas></div></div>
+</div>
+<script>
+const datasets = {{ datasets|tojson }};
+const raw = {{ data|tojson }};
+const palette = ['#315efb','#e04f16','#039855'];
+function series(field) {
+  return datasets.map((d, i) => ({
+    label: d.name,
+    data: (raw[String(d.id)] || []).map(r => ({x: r.relative_time == null ? null : r.relative_time / 60, y: r[field]})).filter(p => p.x !== null && p.y !== null),
+    borderColor: palette[i],
+    backgroundColor: palette[i],
+    borderWidth: 2,
+    pointRadius: 0,
+    tension: .15,
+    fill: false,
+    spanGaps: true
+  }));
+}
+function makeChart(id, field, yTitle) {
+  new Chart(document.getElementById(id), {type:'line', data:{datasets:series(field)}, options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'nearest',intersect:false},plugins:{legend:{display:true,position:'top'}},scales:{x:{type:'linear',title:{display:true,text:'Tempo relativo (min)'}},y:{title:{display:true,text:yTitle}}}}});
+}
+makeChart('temperatureChart','temperature','Temperature');
+makeChart('frequencyChart','resonance_frequency','Hz');
+makeChart('dissipationChart','dissipation','Dissipation');
+</script>
+{% endblock %}

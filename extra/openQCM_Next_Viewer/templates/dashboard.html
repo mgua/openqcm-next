@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% block title %}Dashboard · Data Dashboard{% endblock %}{% block content %}
+<div class="toolbar"><div><h1>Dataset</h1><p class="muted">Puoi visualizzare un'importazione oppure selezionarne fino a tre per confrontarle negli stessi grafici.</p></div>{% if g.user['role']=='admin' %}<a class="btn" href="{{ url_for('import_dataset') }}">+ Importa CSV</a>{% endif %}</div>
+<div class="card">
+{% if datasets %}
+<form id="compare-form" method="get" action="{{ url_for('compare_datasets') }}" onsubmit="return validateSelection()">
+<div class="selection-toolbar"><div><strong>Confronta importazioni</strong><span class="muted"> · massimo 3</span></div><button class="btn secondary" type="submit">Confronta selezionate</button></div>
+</form>
+<table><thead><tr><th></th><th>Nome</th><th>File</th><th>Importato</th><th>Misure</th><th>Azioni</th></tr></thead><tbody>
+{% for d in datasets %}<tr><td><input class="dataset-check" form="compare-form" type="checkbox" name="id" value="{{ d['id'] }}" aria-label="Seleziona {{ d['name'] }}"></td><td><a href="{{ url_for('dataset_detail', dataset_id=d['id']) }}"><strong>{{ d['name'] }}</strong></a></td><td>{{ d['original_filename'] }}</td><td>{{ d['imported_at']|replace('T',' ')|truncate(19, True, '') }} UTC</td><td>{{ d['rows_count'] }}</td><td class="actions"><a class="btn secondary small" href="{{ url_for('dataset_detail', dataset_id=d['id']) }}">Visualizza</a>{% if g.user['role']=='admin' %}<form class="danger-inline" method="post" action="{{ url_for('delete_dataset', dataset_id=d['id']) }}" onsubmit="return confirm('Eliminare definitivamente questo dataset e tutte le sue misure?');"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="btn danger small" type="submit">Elimina</button></form>{% endif %}</td></tr>{% endfor %}
+</tbody></table>
+{% else %}<div class="empty">Nessun dataset importato.{% if g.user['role']=='admin' %}<br><br><a class="btn" href="{{ url_for('import_dataset') }}">Importa il primo CSV</a>{% endif %}</div>{% endif %}
+</div>
+<script>
+function validateSelection(){const n=document.querySelectorAll('.dataset-check:checked').length;if(n<1||n>3){alert('Seleziona da 1 a 3 importazioni.');return false;}return true;}
+document.querySelectorAll('.dataset-check').forEach(c=>c.addEventListener('change',()=>{const checked=[...document.querySelectorAll('.dataset-check:checked')];if(checked.length>3){c.checked=false;alert('Puoi selezionare al massimo 3 importazioni.');}}));
+</script>
+{% endblock %}
