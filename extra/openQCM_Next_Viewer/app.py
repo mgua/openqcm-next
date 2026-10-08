@@ -4,7 +4,7 @@ import os
 import secrets
 import sqlite3
 from ipaddress import ip_address
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from functools import wraps
 
 from flask import Flask, abort, flash, g, redirect, render_template, request, session, url_for
@@ -82,8 +82,12 @@ def init_db():
     if admin is None:
         db.execute(
             "INSERT INTO users(username,password_hash,role,created_at) VALUES (?,?,?,?)",
-            ("admin", generate_password_hash("admin123!"), "admin", datetime.utcnow().isoformat()),
+            ("admin", generate_password_hash("admin123!"), "admin", datetime.now(UTC).isoformat()),
         )
+        #db.execute(
+        #    "INSERT INTO users(username,password_hash,role,created_at) VALUES (?,?,?,?)",
+        #    ("admin", generate_password_hash("admin123!"), "admin", datetime.utcnow().isoformat()),
+        #)
     db.commit()
 
 
@@ -316,8 +320,12 @@ def import_dataset():
             db = get_db()
             cur = db.execute(
                 "INSERT INTO datasets(name,original_filename,imported_at,rows_count) VALUES (?,?,?,?)",
-                (name, os.path.basename(uploaded.filename), datetime.utcnow().isoformat(), len(rows)),
+                (name, os.path.basename(uploaded.filename), datetime.now(UTC).isoformat(), len(rows)),
             )
+            #cur = db.execute(
+            #    "INSERT INTO datasets(name,original_filename,imported_at,rows_count) VALUES (?,?,?,?)",
+            #    (name, os.path.basename(uploaded.filename), datetime.utcnow().isoformat(), len(rows)),
+            #)
             dataset_id = cur.lastrowid
             db.executemany(
                 "INSERT INTO measurements(dataset_id,date,time,relative_time,temperature,resonance_frequency,dissipation) "
@@ -373,8 +381,12 @@ def users():
             try:
                 db.execute(
                     "INSERT INTO users(username,password_hash,role,created_at) VALUES (?,?,?,?)",
-                    (username, generate_password_hash(password), role, datetime.utcnow().isoformat()),
+                    (username, generate_password_hash(password), role, datetime.now(UTC).isoformat()),
                 )
+                #db.execute(
+                #    "INSERT INTO users(username,password_hash,role,created_at) VALUES (?,?,?,?)",
+                #    (username, generate_password_hash(password), role, datetime.utcnow().isoformat()),
+                #)
                 db.commit()
                 flash(f"Utente '{username}' creato.", "success")
             except sqlite3.IntegrityError:
@@ -445,11 +457,22 @@ def ensure_self_signed_certificate():
         .issuer_name(issuer)
         .public_key(key.public_key())
         .serial_number(x509.random_serial_number())
-        .not_valid_before(datetime.utcnow() - timedelta(minutes=1))
-        .not_valid_after(datetime.utcnow() + timedelta(days=825))
+        .not_valid_before(datetime.now(UTC) - timedelta(minutes=1))
+        .not_valid_after(datetime.now(UTC) + timedelta(days=825))
         .add_extension(san, critical=False)
         .sign(key, hashes.SHA256())
     )
+    #cert = (
+    #    x509.CertificateBuilder()
+    #    .subject_name(subject)
+    #    .issuer_name(issuer)
+    #    .public_key(key.public_key())
+    #    .serial_number(x509.random_serial_number())
+    #    .not_valid_before(datetime.utcnow() - timedelta(minutes=1))
+    #    .not_valid_after(datetime.utcnow() + timedelta(days=825))
+    #    .add_extension(san, critical=False)
+    #    .sign(key, hashes.SHA256())
+    #)
     with open(key_path, "wb") as f:
         f.write(key.private_bytes(
             serialization.Encoding.PEM,
