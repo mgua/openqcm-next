@@ -1,14 +1,19 @@
 {% extends "base.html" %}{% block title %}Confronto · Data Dashboard{% endblock %}{% block content %}
+<style>
+    .chart-header {display: flex;justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;}
+    .chart-header h2 {margin: 0;}
+    .chart-header .btn {flex-shrink: 0;}
+</style>
 <div class="toolbar"><div><h1>Confronto importazioni</h1><p class="muted">Confronto di {{ datasets|length }} importazione{% if datasets|length != 1 %}i{% endif %}. L'asse X mostra il tempo relativo in minuti.</p></div><a class="btn secondary" href="{{ url_for('dashboard') }}">← Dataset</a></div>
 <div class="grid">
-<div class="card wide"><h2>Temperature</h2><div class="chart-wrap"><canvas id="temperatureChart"></canvas></div></div>
-<div class="card wide"><h2>Resonance Frequency</h2><div class="chart-wrap"><canvas id="frequencyChart"></canvas></div></div>
-<div class="card wide"><h2>Dissipation</h2><div class="chart-wrap"><canvas id="dissipationChart"></canvas></div></div>
+<div class="card wide"><div class="chart-header"><h2>Temperature</h2><button class="btn secondary" onclick="downloadWhyteChart('temperatureChart', 'temperature.png')">Download PNG</button></div><div class="chart-wrap"><canvas id="temperatureChart"></canvas></div></div>
+<div class="card wide"><div class="chart-header"><h2>Resonance Frequency</h2><button class="btn secondary" onclick="downloadWhyteChart('frequencyChart', 'resonance_frequency.png')">Download PNG</button></div><div class="chart-wrap"><canvas id="frequencyChart"></canvas></div></div>
+<div class="card wide"><div class="chart-header"><h2>Dissipation</h2><button class="btn secondary" onclick="downloadWhyteChart('dissipationChart', 'dissipation.png')">Download PNG</button></div><div class="chart-wrap"><canvas id="dissipationChart"></canvas></div></div>
 </div>
 <script>
 const datasets = {{ datasets|tojson }};
 const raw = {{ data|tojson }};
-const palette = ['#315efb','#e04f16','#039855'];
+const palette = ['#315efb','#e04f16','#039855','#ffd966','#CE7E00','#741b47'];
 function series(field) {
   return datasets.map((d, i) => ({
     label: d.name,
@@ -24,6 +29,33 @@ function series(field) {
 }
 function makeChart(id, field, yTitle) {
   new Chart(document.getElementById(id), {type:'line', data:{datasets:series(field)}, options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'nearest',intersect:false},plugins:{legend:{display:true,position:'top'}},scales:{x:{type:'linear',title:{display:true,text:'Tempo relativo (min)'}},y:{title:{display:true,text:yTitle}}}}});
+}
+function downloadChart(canvasId, filename) {const canvas = document.getElementById(canvasId);const link = document.createElement('a');link.href = canvas.toDataURL('image/png');link.download = filename;link.click();}
+function downloadWhyteChart(canvasId, filename) {
+    const canvas = document.getElementById(canvasId);
+    const chart = Chart.getChart(canvas);
+
+    if (!chart) return;
+
+    // Crea un canvas temporaneo per l'esportazione
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = canvas.width;
+    exportCanvas.height = canvas.height;
+
+    const ctx = exportCanvas.getContext('2d');
+
+    // Imposta lo sfondo bianco
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+    // Disegna il grafico sopra lo sfondo bianco
+    ctx.drawImage(canvas, 0, 0);
+
+    // Scarica il PNG
+    const link = document.createElement('a');
+    link.href = exportCanvas.toDataURL('image/png');
+    link.download = filename;
+    link.click();
 }
 makeChart('temperatureChart','temperature','Temperature');
 makeChart('frequencyChart','resonance_frequency','Hz');

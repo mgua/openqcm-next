@@ -179,8 +179,8 @@ def compare_datasets():
         ids = list(dict.fromkeys(int(x) for x in raw_ids))
     except ValueError:
         abort(400, description="Identificativo dataset non valido.")
-    if not ids or len(ids) > 3:
-        abort(400, description="Seleziona da 1 a 3 dataset.")
+    if not ids or len(ids) > 6:
+        abort(400, description="Seleziona da 1 a 6 dataset.")
     placeholders = ",".join("?" for _ in ids)
     db = get_db()
     datasets = db.execute(
